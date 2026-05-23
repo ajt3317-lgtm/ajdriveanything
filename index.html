@@ -16,12 +16,9 @@
   #game-wrap { position: relative; width: 100vw; height: 100vh; }
   canvas { display: block; background: #2a3a2a; }
   #hud {
-    position: absolute;
-    top: 12px;
-    left: 12px;
+    position: absolute; top: 12px; left: 12px;
     background: rgba(0, 0, 0, 0.65);
-    padding: 12px 16px;
-    border-radius: 10px;
+    padding: 12px 16px; border-radius: 10px;
     backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     min-width: 200px;
@@ -30,88 +27,92 @@
   #hud .label { color: #aaa; }
   #hud .value { font-weight: 600; color: var(--accent, #ffd84a); }
   #status {
-    position: absolute;
-    top: 12px;
-    right: 12px;
+    position: absolute; top: 12px; right: 12px;
     background: rgba(0, 0, 0, 0.65);
-    padding: 12px 16px;
-    border-radius: 10px;
+    padding: 12px 16px; border-radius: 10px;
     backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    max-width: 260px;
-    font-size: 14px;
+    max-width: 260px; font-size: 14px;
   }
   #status .title { font-weight: 700; color: var(--accent, #ffd84a); margin-bottom: 6px; }
   #status .desc { color: #ccc; font-size: 13px; line-height: 1.4; }
   #help {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
+    position: absolute; bottom: 12px; left: 12px;
     background: rgba(0, 0, 0, 0.55);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    color: #ccc;
+    padding: 8px 12px; border-radius: 8px;
+    font-size: 12px; color: #ccc;
   }
   #help kbd {
-    background: #333;
-    border: 1px solid #555;
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-family: monospace;
-    color: #fff;
+    background: #333; border: 1px solid #555;
+    border-radius: 4px; padding: 1px 6px;
+    font-family: monospace; color: #fff;
   }
   #overlay {
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     background: rgba(0, 0, 0, 0.85);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    z-index: 10;
-    padding: 24px;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; z-index: 10; padding: 24px;
+    overflow-y: auto;
   }
   #overlay h1 {
-    font-size: 56px;
-    margin: 0 0 6px;
-    background: linear-gradient(120deg, #ffd84a, #f472b6, #818cf8);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    letter-spacing: -0.02em;
-    font-weight: 800;
+    font-size: 56px; margin: 0 0 6px;
+    background: linear-gradient(120deg, #ffd84a, #f472b6, #5fb8ff);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; letter-spacing: -0.02em; font-weight: 800;
   }
   #overlay p { margin: 4px 0; max-width: 540px; text-align: center; color: #ddd; font-size: 15px; }
-  .modes { display: flex; gap: 20px; margin-top: 28px; flex-wrap: wrap; justify-content: center; }
+  .modes {
+    display: flex; gap: 16px; margin-top: 24px;
+    flex-wrap: wrap; justify-content: center;
+  }
   .mode-card {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    padding: 24px;
-    width: 260px;
-    cursor: pointer;
+    border-radius: 16px; padding: 20px;
+    width: 240px;
     transition: transform 0.15s, background 0.15s, border-color 0.15s;
-    font-family: inherit;
-    color: #fff;
-    text-align: center;
+    font-family: inherit; color: #fff; text-align: center;
+    display: flex; flex-direction: column;
   }
   .mode-card:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--mc-color, #ffd84a);
     transform: translateY(-4px);
   }
-  .mode-card .emoji { font-size: 56px; display: block; margin-bottom: 8px; }
-  .mode-card h2 { font-size: 22px; margin: 4px 0 8px; color: var(--mc-color, #ffd84a); font-weight: 700; }
-  .mode-card p { font-size: 13px; margin: 0; color: #bbb; line-height: 1.45; }
+  .mode-card .emoji { font-size: 48px; display: block; margin-bottom: 4px; }
+  .mode-card h2 { font-size: 20px; margin: 4px 0 6px; color: var(--mc-color, #ffd84a); font-weight: 700; }
+  .mode-card p { font-size: 12px; margin: 0 0 10px; color: #bbb; line-height: 1.45; }
+  .color-row {
+    display: flex; gap: 6px; justify-content: center;
+    margin: 10px 0; flex-wrap: wrap;
+  }
+  .swatch {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer; padding: 0;
+    transition: transform 0.1s, border-color 0.1s;
+  }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.selected {
+    border-color: var(--mc-color, #ffd84a);
+    transform: scale(1.15);
+    box-shadow: 0 0 8px var(--mc-color, #ffd84a);
+  }
+  .drive-btn {
+    margin-top: 8px;
+    padding: 10px 16px;
+    background: var(--mc-color, #ffd84a);
+    color: #1a1a1a;
+    border: none; border-radius: 6px;
+    font-weight: 700; cursor: pointer;
+    font-family: inherit; font-size: 14px;
+    transition: filter 0.15s;
+  }
+  .drive-btn:hover { filter: brightness(1.1); }
   .end-buttons { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; justify-content: center; }
   .end-buttons button {
-    padding: 12px 26px;
-    font-size: 15px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
+    padding: 12px 26px; font-size: 15px; font-weight: 600;
+    border: none; border-radius: 8px; cursor: pointer;
     font-family: inherit;
   }
   .btn-primary { background: #ffd84a; color: #1a1a1a; }
@@ -120,20 +121,14 @@
   .btn-secondary:hover { background: #444; }
   .hidden { display: none !important; }
   #message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     background: rgba(0, 0, 0, 0.85);
     color: var(--accent, #ffd84a);
-    padding: 16px 32px;
-    border-radius: 10px;
-    font-size: 22px;
-    font-weight: 700;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 5;
+    padding: 16px 32px; border-radius: 10px;
+    font-size: 22px; font-weight: 700;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.3s; z-index: 5;
   }
   #message.show { opacity: 1; }
 </style>
@@ -164,22 +159,7 @@
 
   <div id="message"></div>
 
-  <div id="overlay">
-    <h1>DRIVE ANYTHING</h1>
-    <p>Pick something to drive. Grab cargo, deliver it, beat the clock.</p>
-    <div class="modes" id="modeList">
-      <button class="mode-card" data-mode="taxi" style="--mc-color:#ffd84a;">
-        <span class="emoji">&#128658;</span>
-        <h2>Taxi Driver</h2>
-        <p>Pick up passengers across a city grid and deliver them to their destinations. Faster drop-offs earn bigger tips.</p>
-      </button>
-      <button class="mode-card" data-mode="ant" style="--mc-color:#d28a5a;">
-        <span class="emoji">&#128028;</span>
-        <h2>Ant Forager</h2>
-        <p>Crawl around a giant house, haul crumbs and snacks back to your anthill, and dodge stomping human feet.</p>
-      </button>
-    </div>
-  </div>
+  <div id="overlay"></div>
 </div>
 
 <script>
@@ -194,66 +174,96 @@
   window.addEventListener('resize', resize);
   resize();
 
+  // ============ MODE CONFIG ============
   const MODES = {
     taxi: {
       title: 'Taxi Driver',
+      emoji: '&#128658;',
+      blurb: 'Pick up passengers across a city grid and deliver them to their destinations. Faster drop-offs earn bigger tips.',
       accent: '#ffd84a',
       bgClear: '#2a4a2a',
-      earnLabel: 'Earnings',
-      fareLabel: 'Fares',
-      earnPrefix: '$',
-      duration: 120,
-      hasLives: false,
-      lives: 0,
-      hasHazards: false,
-      speedSuffix: ' mph',
-      speedMul: 12,
+      earnLabel: 'Earnings', fareLabel: 'Fares', earnPrefix: '$',
+      duration: 120, hasLives: false, lives: 0, hasHazards: false,
+      speedSuffix: ' mph', speedMul: 12,
       statusInitial: { t: 'Looking for a fare', d: 'Drive to the cyan marker to pick someone up.' },
       gameOver: {
         good: 'Stellar shift! The dispatcher will be pleased.',
         mid: 'Not bad. Some passengers still need a ride home.',
         bad: 'Rough day on the streets. Try again?'
       },
-      pickupRadius: 28,
-      stopSpeed: 0.6,
+      pickupRadius: 28, stopSpeed: 0.6,
     },
     ant: {
       title: 'Ant Forager',
+      emoji: '&#128028;',
+      blurb: 'Crawl around a giant house, haul crumbs and snacks back to your anthill, and dodge stomping human feet.',
       accent: '#d28a5a',
       bgClear: '#1a1410',
-      earnLabel: 'Food',
-      fareLabel: 'Deliveries',
-      earnPrefix: '',
-      duration: 120,
-      hasLives: true,
-      lives: 3,
-      hasHazards: true,
-      speedSuffix: '',
-      speedMul: 60,
+      earnLabel: 'Food', fareLabel: 'Deliveries', earnPrefix: '',
+      duration: 120, hasLives: true, lives: 3, hasHazards: true,
+      speedSuffix: '', speedMul: 60,
       statusInitial: { t: 'The colony needs food', d: 'Crawl to the cyan marker to grab some food.' },
       gameOver: {
         good: 'A feast for the colony! The queen is pleased.',
         mid: 'Decent forage. The anthill survives another day.',
         bad: 'Slim pickings. Watch the sky next time...'
       },
-      pickupRadius: 18,
-      stopSpeed: 0.5,
+      pickupRadius: 18, stopSpeed: 0.5,
+    },
+    plane: {
+      title: 'Plane Pilot',
+      emoji: '&#9992;',
+      blurb: 'Fly passengers between airports across an ocean map. Throttle down to land — you cannot fully stop in the air.',
+      accent: '#5fb8ff',
+      bgClear: '#7da9c8',
+      earnLabel: 'Earnings', fareLabel: 'Flights', earnPrefix: '$',
+      duration: 180, hasLives: false, lives: 0, hasHazards: false,
+      speedSuffix: ' kts', speedMul: 32,
+      statusInitial: { t: 'Cleared for taxi', d: 'A passenger needs a flight to another airport.' },
+      gameOver: {
+        good: 'Smooth flying, captain. Tower says well done.',
+        mid: 'Decent shift. A few delays, but you made it.',
+        bad: 'Choppy shift. The tower wants a word with you.'
+      },
+      pickupRadius: 70, stopSpeed: 2.4,
     }
   };
 
-  let mode = null;
-  let world = null;
-  let player = null;
-  let money = 0;
-  let fares = 0;
-  let lives = 0;
-  let timeLeft = 0;
-  let running = false;
-  let passenger = null;
-  let hazards = [];
-  let hazardTimer = 0;
-  let shake = 0;
-  let invuln = 0;
+  // ============ CUSTOMIZATION ============
+  const COLOR_PALETTE = {
+    taxi:  ['#ffd84a', '#ff5a5a', '#5aff5a', '#5a8aff', '#d05aff', '#ffffff', '#222222'],
+    ant:   ['#3a1808', '#cc1810', '#0a48a0', '#0a6010', '#6a0a6a', '#ff8800', '#888888'],
+    plane: ['#ffffff', '#ff5a5a', '#5fb8ff', '#ffd84a', '#5aff5a', '#d05aff', '#222222'],
+  };
+
+  let customization = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('driveAnythingColors'));
+      if (saved && saved.taxi && saved.ant && saved.plane) return saved;
+    } catch (e) {}
+    return {
+      taxi: COLOR_PALETTE.taxi[0],
+      ant: COLOR_PALETTE.ant[0],
+      plane: COLOR_PALETTE.plane[0],
+    };
+  })();
+  function saveCustomization() {
+    try { localStorage.setItem('driveAnythingColors', JSON.stringify(customization)); } catch (e) {}
+  }
+  function darken(hex, factor) {
+    const h = hex.replace('#','');
+    const full = h.length === 3 ? h.split('').map(c=>c+c).join('') : h;
+    const r = Math.floor(parseInt(full.slice(0,2),16) * factor);
+    const g = Math.floor(parseInt(full.slice(2,4),16) * factor);
+    const b = Math.floor(parseInt(full.slice(4,6),16) * factor);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  // ============ STATE ============
+  let mode = null, world = null, player = null;
+  let money = 0, fares = 0, lives = 0, timeLeft = 0;
+  let running = false, passenger = null;
+  let hazards = [], hazardTimer = 0, shake = 0, invuln = 0;
   const cam = { x: 0, y: 0 };
   const keys = {};
 
@@ -421,6 +431,79 @@
     };
   }
 
+  // ============ SKY WORLD ============
+  function buildSkyWorld() {
+    const WORLD_W = 4000, WORLD_H = 3000;
+    const airports = [
+      { x: 700,  y: 600,  name: 'Northport' },
+      { x: 2000, y: 700,  name: 'Midfield' },
+      { x: 3200, y: 800,  name: 'Eastpoint' },
+      { x: 1100, y: 1700, name: 'Lakeside' },
+      { x: 2800, y: 1900, name: 'Sunset' },
+      { x: 600,  y: 2500, name: 'Southport' },
+      { x: 3400, y: 2500, name: 'Cape Field' },
+    ];
+    // Land patches: each airport gets a cluster of blobs; plus decorative islands
+    const landPatches = [];
+    let rs = 12345;
+    function rng() { rs = (rs * 1664525 + 1013904223) >>> 0; return (rs % 10000) / 10000; }
+    for (const ap of airports) {
+      const cluster = [];
+      cluster.push({ x: ap.x,                       y: ap.y,                       r: 260 });
+      cluster.push({ x: ap.x + (rng()-0.5)*220,     y: ap.y + (rng()-0.5)*220,     r: 180 });
+      cluster.push({ x: ap.x + (rng()-0.5)*260,     y: ap.y + (rng()-0.5)*260,     r: 200 });
+      cluster.push({ x: ap.x + (rng()-0.5)*300,     y: ap.y + (rng()-0.5)*300,     r: 150 });
+      landPatches.push(cluster);
+    }
+    const extraSeeds = [
+      { x: 1500, y: 1300 }, { x: 2400, y: 1100 }, { x: 3700, y: 1500 },
+      { x: 200,  y: 1200 }, { x: 1900, y: 2700 }, { x: 3000, y: 350 },
+      { x: 150, y: 2000 }
+    ];
+    for (const s of extraSeeds) {
+      const cluster = [];
+      cluster.push({ x: s.x, y: s.y, r: 90 });
+      cluster.push({ x: s.x + (rng()-0.5)*150, y: s.y + (rng()-0.5)*150, r: 70 });
+      cluster.push({ x: s.x + (rng()-0.5)*200, y: s.y + (rng()-0.5)*200, r: 60 });
+      landPatches.push(cluster);
+    }
+    const clouds = [];
+    for (let i = 0; i < 60; i++) {
+      clouds.push({
+        x: rng() * WORLD_W,
+        y: rng() * WORLD_H,
+        size: 40 + rng() * 70,
+      });
+    }
+    const cities = [];
+    for (const ap of airports) {
+      const buildings = [];
+      for (let i = 0; i < 14; i++) {
+        const ang = rng() * Math.PI * 2;
+        const r = 80 + rng() * 140;
+        buildings.push({
+          x: ap.x + Math.cos(ang) * r,
+          y: ap.y + Math.sin(ang) * r,
+          size: 7 + rng() * 9,
+          color: `hsl(${30 + (rng()*40)|0}, 25%, ${45 + (rng()*15)|0}%)`,
+        });
+      }
+      cities.push({ ap, buildings });
+    }
+    return {
+      type: 'sky',
+      width: WORLD_W, height: WORLD_H,
+      airports, landPatches, clouds, cities,
+      spawn: { x: airports[0].x, y: airports[0].y + 200, angle: 0 },
+      isOffSurface() { return false; },
+      offSurfacePenalty: 1.0,
+      collides() { return false; },
+      randomPickup() { return airports[Math.floor(Math.random() * airports.length)]; },
+      randomDest()   { return airports[Math.floor(Math.random() * airports.length)]; },
+      fixedDest: null,
+    };
+  }
+
   // ============ PLAYER ============
   function createPlayer(kind) {
     if (kind === 'taxi') {
@@ -431,7 +514,7 @@
         accel: 0.08, brake: 0.18, friction: 0.03, turn: 0.045,
         turnAtRest: false,
       };
-    } else {
+    } else if (kind === 'ant') {
       return {
         kind: 'ant', x: 0, y: 0, angle: 0, speed: 0,
         w: 10, h: 16,
@@ -439,6 +522,15 @@
         accel: 0.18, brake: 0.28, friction: 0.08, turn: 0.07,
         turnAtRest: true,
         legPhase: 0,
+      };
+    } else {
+      return {
+        kind: 'plane', x: 0, y: 0, angle: 0, speed: 4,
+        w: 28, h: 46,
+        minSpeed: 1.6, cruise: 4.5, maxSpeed: 8,
+        maxReverse: 0,
+        accel: 0.07, brake: 0, friction: 0.05, turn: 0.05,
+        turnAtRest: false,
       };
     }
   }
@@ -469,6 +561,13 @@
         name: passengerNames[Math.floor(Math.random()*passengerNames.length)],
         fare: baseFare, status: 'waiting', maxTime: 60, timer: 0, type: 'passenger',
       };
+    } else if (mode === 'plane') {
+      const baseFare = 15 + Math.round(dist(pickup, dest) / 80);
+      passenger = {
+        pickup, dest,
+        name: passengerNames[Math.floor(Math.random()*passengerNames.length)],
+        fare: baseFare, status: 'waiting', maxTime: 90, timer: 0, type: 'passenger',
+      };
     } else {
       const f = foodTypes[Math.floor(Math.random()*foodTypes.length)];
       passenger = {
@@ -491,10 +590,18 @@
     if (mode === 'taxi') {
       if (passenger.status === 'waiting') {
         t.textContent = `${passenger.name} needs a ride`;
-        d.textContent = `Head to the cyan marker. Fare: $${passenger.fare}. Don't keep them waiting!`;
+        d.textContent = `Head to the cyan marker. Fare: $${passenger.fare}.`;
       } else {
         t.textContent = `Driving ${passenger.name}`;
         d.textContent = `Drop them off at the red marker. Faster drop-offs earn bigger tips.`;
+      }
+    } else if (mode === 'plane') {
+      if (passenger.status === 'waiting') {
+        t.textContent = `Pick up ${passenger.name}`;
+        d.textContent = `Land at ${passenger.pickup.name}. Fare: $${passenger.fare}. Throttle down to land.`;
+      } else {
+        t.textContent = `Flying ${passenger.name}`;
+        d.textContent = `Destination: ${passenger.dest.name}. Throttle down to land on the runway.`;
       }
     } else {
       if (passenger.status === 'waiting') {
@@ -530,11 +637,9 @@
     tx = clamp(tx, 60, world.width - 60);
     ty = clamp(ty, 60, world.height - 60);
     hazards.push({
-      x: tx, y: ty,
-      age: 0,
+      x: tx, y: ty, age: 0,
       warnDur: 1.1 + Math.random() * 0.5,
-      stompDur: 0.18,
-      liftDur: 0.55,
+      stompDur: 0.18, liftDur: 0.55,
       radius: 70 + Math.random() * 20,
       state: 'warn',
     });
@@ -551,12 +656,9 @@
       const f = hazards[i];
       f.age += dt;
       if (f.state === 'warn' && f.age >= f.warnDur) {
-        f.state = 'stomp';
-        f.age = 0;
-        shake = 12;
+        f.state = 'stomp'; f.age = 0; shake = 12;
         if (invuln <= 0 && Math.hypot(player.x - f.x, player.y - f.y) < f.radius * 0.9) {
-          lives -= 1;
-          invuln = 1.6;
+          lives -= 1; invuln = 1.6;
           showMessage('STOMPED!', '#f55');
           if (passenger && passenger.status === 'onboard') {
             showMessage('Dropped the food!', '#f88');
@@ -588,23 +690,36 @@
     const leftI = (keys['a'] || keys['arrowleft']) ? 1 : 0;
     const rightI = (keys['d'] || keys['arrowright']) ? 1 : 0;
 
-    if (accelI) player.speed += player.accel;
-    else if (revI) player.speed -= player.accel;
-    else {
-      if (player.speed > 0) player.speed = Math.max(0, player.speed - player.friction);
-      else if (player.speed < 0) player.speed = Math.min(0, player.speed + player.friction);
+    if (player.kind === 'plane') {
+      // Plane: always moving forward, no brake, drifts toward cruise
+      if (accelI) player.speed += player.accel;
+      else if (revI) player.speed -= player.accel;
+      else {
+        if (player.speed > player.cruise) player.speed = Math.max(player.cruise, player.speed - player.friction);
+        else if (player.speed < player.cruise) player.speed = Math.min(player.cruise, player.speed + player.friction);
+      }
+      player.speed = clamp(player.speed, player.minSpeed, player.maxSpeed);
+    } else {
+      if (accelI) player.speed += player.accel;
+      else if (revI) player.speed -= player.accel;
+      else {
+        if (player.speed > 0) player.speed = Math.max(0, player.speed - player.friction);
+        else if (player.speed < 0) player.speed = Math.min(0, player.speed + player.friction);
+      }
+      if (brakeI) {
+        if (player.speed > 0) player.speed = Math.max(0, player.speed - player.brake);
+        else if (player.speed < 0) player.speed = Math.min(0, player.speed + player.brake);
+      }
+      player.speed = clamp(player.speed, player.maxReverse, player.maxSpeed);
     }
-    if (brakeI) {
-      if (player.speed > 0) player.speed = Math.max(0, player.speed - player.brake);
-      else if (player.speed < 0) player.speed = Math.min(0, player.speed + player.brake);
-    }
-    player.speed = clamp(player.speed, player.maxReverse, player.maxSpeed);
 
     if (player.turnAtRest) {
       if (leftI) player.angle -= player.turn;
       if (rightI) player.angle += player.turn;
     } else {
-      const rate = player.turn * (Math.abs(player.speed) / player.maxSpeed) * (player.speed >= 0 ? 1 : -1);
+      const speedFrac = Math.abs(player.speed) / player.maxSpeed;
+      const dir = player.speed >= 0 ? 1 : -1;
+      const rate = player.turn * speedFrac * dir;
       if (leftI) player.angle -= rate * 1.4;
       if (rightI) player.angle += rate * 1.4;
     }
@@ -626,10 +741,10 @@
     if (hit) {
       if (Math.abs(player.speed) > 2.5 && mode === 'taxi') showMessage('CRASH!', '#f66');
       if (mode === 'taxi') player.speed *= -0.35;
-      else player.speed = 0;
+      else if (mode === 'ant') player.speed = 0;
+      // plane never hits
     }
 
-    // Depenetration: if rotation pushed a corner into an obstacle, nudge out
     if (world.collides(player.x, player.y, player.w, player.h, player.angle)) {
       for (let attempts = 0; attempts < 20; attempts++) {
         const pd = 1 + attempts * 0.5;
@@ -640,8 +755,7 @@
           const py = player.y + Math.sin(a) * pd;
           if (!world.collides(px, py, player.w, player.h, player.angle)) {
             player.x = px; player.y = py;
-            escaped = true;
-            break;
+            escaped = true; break;
           }
         }
         if (escaped) break;
@@ -664,10 +778,12 @@
         if (dist(player, passenger.pickup) < pickupR && stopOK) {
           passenger.status = 'onboard';
           if (mode === 'taxi') showMessage(`${passenger.name} hopped in!`, '#4fd');
+          else if (mode === 'plane') showMessage(`${passenger.name} boarded!`, '#4fd');
           else showMessage(`Got the ${passenger.foodName}!`, '#4fd');
           updateStatus();
         } else if (passenger.timer > passenger.maxTime) {
           if (mode === 'taxi') showMessage(`${passenger.name} gave up...`, '#f88');
+          else if (mode === 'plane') showMessage(`${passenger.name} missed the flight...`, '#f88');
           else showMessage(`Other ants got it first...`, '#f88');
           passenger = null;
         }
@@ -676,6 +792,10 @@
           let total = passenger.fare;
           if (mode === 'taxi') {
             const tip = Math.max(0, Math.round((passenger.maxTime - passenger.timer + 30) * 0.2));
+            total = passenger.fare + tip;
+            showMessage(`+$${total} ${tip>0 ? `(tip $${tip})` : ''}`, '#4fd');
+          } else if (mode === 'plane') {
+            const tip = Math.max(0, Math.round((passenger.maxTime - passenger.timer + 30) * 0.15));
             total = passenger.fare + tip;
             showMessage(`+$${total} ${tip>0 ? `(tip $${tip})` : ''}`, '#4fd');
           } else {
@@ -713,7 +833,12 @@
     ctx.translate(W / 2 - cam.x + sx, H / 2 - cam.y + sy);
 
     if (world.type === 'city') drawCityBg();
-    else drawHouseBg();
+    else if (world.type === 'house') drawHouseBg();
+    else drawSkyBg();
+
+    if (world.type === 'sky') {
+      for (const ap of world.airports) drawAirport(ap);
+    }
 
     if (passenger) {
       const t = performance.now() / 300;
@@ -722,7 +847,7 @@
         if (passenger.type === 'passenger') drawPerson(passenger.pickup.x, passenger.pickup.y);
         else passenger.foodDraw(passenger.pickup.x, passenger.pickup.y, 1);
       }
-      if (mode === 'taxi' || passenger.status === 'onboard') {
+      if (mode !== 'ant' || passenger.status === 'onboard') {
         drawMarker(passenger.dest.x, passenger.dest.y, '#f55', 1 + Math.cos(t) * 0.2);
       }
       drawOffscreenArrow(passenger.status === 'waiting' ? passenger.pickup : passenger.dest,
@@ -731,8 +856,12 @@
 
     if (world.type === 'house') drawAnthill(world.anthill.x, world.anthill.y);
 
+    // Plane mode: clouds drawn between scenery and the plane (plane is "above" clouds)
+    if (world.type === 'sky') drawClouds();
+
     if (player.kind === 'taxi') drawTaxiCar(player.x, player.y, player.angle);
-    else drawAntChar(player.x, player.y, player.angle, player.legPhase, passenger && passenger.status === 'onboard' ? passenger : null);
+    else if (player.kind === 'ant') drawAntChar(player.x, player.y, player.angle, player.legPhase, passenger && passenger.status === 'onboard' ? passenger : null);
+    else drawPlaneCharacter(player.x, player.y, player.angle);
 
     for (const f of hazards) drawFoot(f);
 
@@ -831,7 +960,6 @@
     for (let y = 0; y < h; y += plankH) {
       ctx.fillRect(0, y + plankH - 6, w, 4);
     }
-    // Rug
     ctx.fillStyle = '#7a3a3a';
     ctx.fillRect(200, 740, 480, 320);
     ctx.fillStyle = '#a04848';
@@ -839,7 +967,6 @@
     ctx.strokeStyle = '#ffd2a0';
     ctx.lineWidth = 2;
     ctx.strokeRect(240, 780, 400, 240);
-    // Dining table top (translucent — ant can crawl under)
     const dt = world.diningTableTop;
     ctx.fillStyle = 'rgba(100, 60, 30, 0.35)';
     ctx.fillRect(dt.x, dt.y, dt.w, dt.h);
@@ -849,30 +976,138 @@
     for (const o of world.obstacles) drawObstacle(o);
   }
 
+  function drawSkyBg() {
+    const w = world.width, h = world.height;
+    // Ocean base
+    ctx.fillStyle = '#5e92b8';
+    ctx.fillRect(0, 0, w, h);
+    // Ocean shimmer pattern
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    for (let y = 0; y < h; y += 60) {
+      for (let x = 0; x < w; x += 80) {
+        const ox = (Math.floor(y/60) % 2) * 40;
+        ctx.beginPath();
+        ctx.ellipse(x + ox, y + 30, 12, 2, 0, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    // Land patches: coast shadow + main land + highlight
+    for (const cluster of world.landPatches) {
+      ctx.fillStyle = '#3a684a';
+      for (const blob of cluster) {
+        ctx.beginPath();
+        ctx.arc(blob.x + 4, blob.y + 6, blob.r + 5, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#7ea862';
+      for (const blob of cluster) {
+        ctx.beginPath();
+        ctx.arc(blob.x, blob.y, blob.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#a0c878';
+      for (const blob of cluster) {
+        ctx.beginPath();
+        ctx.arc(blob.x - 6, blob.y - 10, blob.r * 0.65, 0, Math.PI*2);
+        ctx.fill();
+      }
+      // Sand around edges
+      ctx.fillStyle = 'rgba(220, 190, 130, 0.5)';
+      for (const blob of cluster) {
+        ctx.beginPath();
+        ctx.arc(blob.x + 2, blob.y + 4, blob.r + 2, 0, Math.PI*2);
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = 'rgba(220, 190, 130, 0.5)';
+        ctx.stroke();
+      }
+    }
+    // Cities (decorative buildings around airports)
+    for (const city of world.cities) {
+      for (const b of city.buildings) {
+        ctx.fillStyle = 'rgba(60, 40, 20, 0.5)';
+        ctx.fillRect(b.x + 1, b.y + 2, b.size, b.size);
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, b.y, b.size, b.size);
+        ctx.fillStyle = '#3a2a1c';
+        ctx.fillRect(b.x, b.y, b.size, 2);
+      }
+    }
+  }
+
+  function drawClouds() {
+    for (const cl of world.clouds) {
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      ctx.arc(cl.x, cl.y, cl.size * 0.4, 0, Math.PI*2);
+      ctx.arc(cl.x + cl.size * 0.3, cl.y - cl.size * 0.1, cl.size * 0.5, 0, Math.PI*2);
+      ctx.arc(cl.x + cl.size * 0.6, cl.y, cl.size * 0.4, 0, Math.PI*2);
+      ctx.arc(cl.x + cl.size * 0.3, cl.y + cl.size * 0.15, cl.size * 0.45, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function drawAirport(ap) {
+    ctx.save();
+    ctx.translate(ap.x, ap.y);
+    // Runway
+    ctx.fillStyle = '#3a3a3e';
+    ctx.fillRect(-32, -130, 64, 260);
+    // White borders
+    ctx.fillStyle = '#e8e8e8';
+    ctx.fillRect(-31, -128, 3, 256);
+    ctx.fillRect(28, -128, 3, 256);
+    // Center dashes
+    for (let y = -110; y < 110; y += 30) {
+      ctx.fillRect(-3, y, 6, 18);
+    }
+    // Threshold markings
+    for (let i = 0; i < 5; i++) {
+      ctx.fillRect(-22 + i * 10, -126, 6, 14);
+      ctx.fillRect(-22 + i * 10, 112, 6, 14);
+    }
+    // Terminal building
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-62, -18, 24, 36);
+    ctx.fillStyle = '#b8b8c0';
+    ctx.fillRect(-64, -20, 24, 36);
+    ctx.fillStyle = '#5588cc';
+    for (let y = -16; y < 14; y += 6) {
+      ctx.fillRect(-62, y, 3, 3);
+      ctx.fillRect(-50, y, 3, 3);
+    }
+    // Tower
+    ctx.fillStyle = '#a8a8b0';
+    ctx.fillRect(46, -10, 12, 30);
+    ctx.fillStyle = '#88aacc';
+    ctx.fillRect(45, -14, 14, 6);
+    // Sign with airport name
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(-50, -158, 100, 18);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ap.name, 0, -149);
+    ctx.restore();
+  }
+
   function drawObstacle(o) {
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillRect(o.x + 3, o.y + 5, o.w, o.h);
     switch (o.kind) {
       case 'wall':
-        ctx.fillStyle = '#5a4030';
-        ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.strokeStyle = '#3a2818'; ctx.lineWidth = 2;
-        ctx.strokeRect(o.x, o.y, o.w, o.h);
-        break;
+        ctx.fillStyle = '#5a4030'; ctx.fillRect(o.x, o.y, o.w, o.h);
+        ctx.strokeStyle = '#3a2818'; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h); break;
       case 'fridge':
-        ctx.fillStyle = '#dde0e6';
-        ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
-        ctx.strokeRect(o.x, o.y, o.w, o.h);
+        ctx.fillStyle = '#dde0e6'; ctx.fillRect(o.x, o.y, o.w, o.h);
+        ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h);
         ctx.beginPath(); ctx.moveTo(o.x, o.y + o.h * 0.4); ctx.lineTo(o.x + o.w, o.y + o.h * 0.4); ctx.stroke();
         ctx.fillStyle = '#666';
         ctx.fillRect(o.x + o.w - 14, o.y + 14, 6, 24);
-        ctx.fillRect(o.x + o.w - 14, o.y + o.h * 0.4 + 14, 6, 24);
-        break;
+        ctx.fillRect(o.x + o.w - 14, o.y + o.h * 0.4 + 14, 6, 24); break;
       case 'stove':
-        ctx.fillStyle = '#2a2a2e';
-        ctx.fillRect(o.x, o.y, o.w, o.h);
+        ctx.fillStyle = '#2a2a2e'; ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillStyle = '#444';
         for (let i = 0; i < 4; i++) {
           const cx = o.x + 30 + (i % 2) * (o.w - 60);
@@ -880,57 +1115,44 @@
           ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI*2); ctx.fill();
           ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI*2); ctx.stroke();
-        }
-        break;
+        } break;
       case 'counter':
-        ctx.fillStyle = '#bda078';
-        ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.strokeStyle = '#8a7050'; ctx.lineWidth = 2;
-        ctx.strokeRect(o.x, o.y, o.w, o.h);
+        ctx.fillStyle = '#bda078'; ctx.fillRect(o.x, o.y, o.w, o.h);
+        ctx.strokeStyle = '#8a7050'; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h);
         ctx.strokeStyle = 'rgba(120, 80, 40, 0.4)'; ctx.lineWidth = 1;
         for (let x = o.x + 20; x < o.x + o.w; x += 40) {
           ctx.beginPath(); ctx.moveTo(x, o.y); ctx.lineTo(x + 4, o.y + o.h); ctx.stroke();
-        }
-        break;
+        } break;
       case 'sink':
         ctx.fillStyle = '#bda078'; ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillStyle = '#8aa0b0'; ctx.fillRect(o.x + 30, o.y + 20, o.w - 60, o.h - 40);
         ctx.fillStyle = '#aac';    ctx.fillRect(o.x + 50, o.y + 35, o.w - 100, o.h - 70);
-        ctx.fillStyle = '#888';    ctx.fillRect(o.x + o.w/2 - 4, o.y + 10, 8, 18);
-        break;
+        ctx.fillStyle = '#888';    ctx.fillRect(o.x + o.w/2 - 4, o.y + 10, 8, 18); break;
       case 'couch':
         ctx.fillStyle = '#6a5588'; ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillStyle = '#7e6a9c'; ctx.fillRect(o.x + 8, o.y + 12, o.w - 16, o.h - 24);
         ctx.fillStyle = '#584673';
         ctx.fillRect(o.x, o.y, o.w, 14);
-        ctx.fillRect(o.x, o.y + o.h - 14, o.w, 14);
-        break;
+        ctx.fillRect(o.x, o.y + o.h - 14, o.w, 14); break;
       case 'cofftable':
         ctx.fillStyle = '#5c3a20'; ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.strokeStyle = '#3c2410'; ctx.lineWidth = 2;
-        ctx.strokeRect(o.x, o.y, o.w, o.h);
+        ctx.strokeStyle = '#3c2410'; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h);
         ctx.strokeStyle = 'rgba(140, 90, 50, 0.6)'; ctx.lineWidth = 1;
         for (let x = o.x + 10; x < o.x + o.w; x += 20) {
           ctx.beginPath(); ctx.moveTo(x, o.y); ctx.lineTo(x, o.y + o.h); ctx.stroke();
-        }
-        break;
+        } break;
       case 'tv':
         ctx.fillStyle = '#3a3a3a'; ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillStyle = '#101820'; ctx.fillRect(o.x + 30, o.y + 8, o.w - 60, o.h - 30);
         ctx.fillStyle = 'rgba(100, 180, 255, 0.3)';
-        ctx.fillRect(o.x + 34, o.y + 12, o.w - 68, o.h - 38);
-        break;
+        ctx.fillRect(o.x + 34, o.y + 12, o.w - 68, o.h - 38); break;
       case 'tableleg':
         ctx.fillStyle = '#5c3a20'; ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.strokeStyle = '#3c2410'; ctx.lineWidth = 2;
-        ctx.strokeRect(o.x, o.y, o.w, o.h);
-        break;
+        ctx.strokeStyle = '#3c2410'; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h); break;
       case 'chair':
         ctx.fillStyle = '#8a6a4a'; ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.strokeStyle = '#5c3a20'; ctx.lineWidth = 2;
-        ctx.strokeRect(o.x, o.y, o.w, o.h);
-        ctx.fillStyle = '#5c3a20'; ctx.fillRect(o.x, o.y, o.w, 8);
-        break;
+        ctx.strokeStyle = '#5c3a20'; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h);
+        ctx.fillStyle = '#5c3a20'; ctx.fillRect(o.x, o.y, o.w, 8); break;
       case 'shelf':
         ctx.fillStyle = '#6a4828'; ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillStyle = '#3a2818'; ctx.fillRect(o.x + 4, o.y + 4, o.w - 8, o.h - 8);
@@ -939,8 +1161,7 @@
             ctx.fillStyle = `hsl(${(x*13+y*7) % 360}, 50%, 45%)`;
             ctx.fillRect(x, y, 7, 26);
           }
-        }
-        break;
+        } break;
       case 'trash':
         ctx.fillStyle = '#3a3a3a'; ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillStyle = '#5a5a5a'; ctx.fillRect(o.x + 4, o.y - 6, o.w - 8, 10);
@@ -950,8 +1171,7 @@
           ctx.moveTo(o.x, o.y + i * (o.h / 4) + 10);
           ctx.lineTo(o.x + o.w, o.y + i * (o.h / 4) + 10);
           ctx.stroke();
-        }
-        break;
+        } break;
       case 'bowl':
         ctx.fillStyle = '#c84030';
         ctx.beginPath();
@@ -967,8 +1187,7 @@
           ctx.beginPath();
           ctx.arc(o.x + o.w/2 + Math.cos(ang)*8, o.y + o.h/2 + Math.sin(ang)*8, 2, 0, Math.PI*2);
           ctx.fill();
-        }
-        break;
+        } break;
     }
     ctx.restore();
   }
@@ -1039,9 +1258,10 @@
     ctx.translate(x, y);
     ctx.rotate(angle);
     const w = 22, h = 38;
+    const body = customization.taxi;
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.fillRect(-w/2 + 2, -h/2 + 3, w, h);
-    ctx.fillStyle = '#ffd84a';
+    ctx.fillStyle = body;
     ctx.fillRect(-w/2, -h/2, w, h);
     ctx.fillStyle = '#222';
     for (let i = 0; i < 4; i++) {
@@ -1060,7 +1280,7 @@
     ctx.fillRect(w/2 - 7, h/2 - 1, 5, 2);
     ctx.fillStyle = '#000';
     ctx.fillRect(-6, -4, 12, 5);
-    ctx.fillStyle = '#ffd84a';
+    ctx.fillStyle = body;
     ctx.font = 'bold 6px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1073,9 +1293,11 @@
     ctx.translate(x, y);
     ctx.rotate(angle);
     if (invuln > 0 && Math.floor(invuln * 12) % 2 === 0) ctx.globalAlpha = 0.4;
+    const body = customization.ant;
+    const leg = darken(body, 0.4);
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(2, 3, 10, 6, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#1a0a02';
+    ctx.strokeStyle = leg;
     ctx.lineWidth = 1.5;
     const sw = Math.sin(legPhase) * 2;
     const sw2 = Math.sin(legPhase + Math.PI) * 2;
@@ -1085,11 +1307,11 @@
     ctx.beginPath(); ctx.moveTo(1, -5); ctx.lineTo(8 - sw, -8); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(9 - sw2, 0); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(1, 5); ctx.lineTo(8 - sw, 9); ctx.stroke();
-    ctx.fillStyle = '#3a1808';
+    ctx.fillStyle = body;
     ctx.beginPath(); ctx.ellipse(0, 5, 4.5, 5.5, 0, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(0, -1, 3.5, 3.5, 0, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(0, -7, 3.5, 3, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#1a0a02';
+    ctx.strokeStyle = leg;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(-1.5, -8); ctx.lineTo(-3 + sw*0.5, -11); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(1.5, -8); ctx.lineTo(3 - sw*0.5, -11); ctx.stroke();
@@ -1103,6 +1325,79 @@
       carrying.foodDraw(0, 0, 0.85);
       ctx.restore();
     }
+    ctx.restore();
+  }
+
+  function drawPlaneCharacter(x, y, angle) {
+    const body = customization.plane;
+    const accent = darken(body, 0.55);
+    // Shadow on the ground, offset SE
+    ctx.save();
+    ctx.translate(x + 18, y + 26);
+    ctx.rotate(angle);
+    ctx.fillStyle = 'rgba(0, 0, 30, 0.3)';
+    ctx.beginPath(); ctx.ellipse(0, 0, 6, 22, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillRect(-26, -3, 52, 6);
+    ctx.fillRect(-11, 12, 22, 4);
+    ctx.restore();
+
+    // Plane
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    // Tail wing
+    ctx.fillStyle = '#cccccc';
+    ctx.fillRect(-12, 12, 24, 5);
+    ctx.fillStyle = '#888';
+    ctx.fillRect(-2, 13, 4, 9);
+    // Main wings
+    ctx.fillStyle = body;
+    ctx.fillRect(-26, -4, 52, 9);
+    ctx.fillStyle = accent;
+    ctx.fillRect(-26, 0, 52, 2);
+    // Wing tip lights
+    ctx.fillStyle = '#fa3';
+    ctx.fillRect(-26, -4, 3, 9);
+    ctx.fillStyle = '#3af';
+    ctx.fillRect(23, -4, 3, 9);
+    // Body
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6, 22, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6, 22, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // Accent stripe
+    ctx.fillStyle = accent;
+    ctx.fillRect(-1, -18, 2, 28);
+    // Cockpit
+    ctx.fillStyle = '#3a6a99';
+    ctx.beginPath();
+    ctx.ellipse(0, -12, 3.5, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#9bd';
+    ctx.beginPath();
+    ctx.ellipse(-1.2, -13, 1.2, 2.4, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Propeller
+    const propT = performance.now() / 25;
+    ctx.fillStyle = 'rgba(40, 40, 40, 0.3)';
+    ctx.beginPath(); ctx.arc(0, -22, 8, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(30, 30, 30, 0.7)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 2; i++) {
+      const a = propT + i * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 8, -22 + Math.sin(a) * 2);
+      ctx.lineTo(Math.cos(a + Math.PI) * 8, -22 + Math.sin(a + Math.PI) * 2);
+      ctx.stroke();
+    }
+    // Propeller hub
+    ctx.fillStyle = '#555';
+    ctx.beginPath(); ctx.arc(0, -22, 2, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
 
@@ -1162,11 +1457,9 @@
   }
   function drawFoodCereal(x, y, scale) {
     ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
-    ctx.strokeStyle = '#e8a040';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#e8a040'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.stroke();
-    ctx.strokeStyle = '#c47820';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#c47820'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.stroke();
     ctx.restore();
   }
@@ -1174,8 +1467,7 @@
     ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
     ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(-5, -5, 10, 10);
-    ctx.strokeStyle = '#bbb';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1;
     ctx.strokeRect(-5, -5, 10, 10);
     ctx.fillStyle = '#fff';
     ctx.fillRect(-4, -4, 4, 4);
@@ -1208,7 +1500,7 @@
   function loop(now) {
     const dt = Math.min(0.05, (now - lastTime) / 1000);
     lastTime = now;
-    if (mode) {
+    if (mode && running) {
       update(dt);
       draw();
     }
@@ -1226,10 +1518,12 @@
     timeLeft = M.duration;
     passenger = null; hazards = []; hazardTimer = 3.5; shake = 0; invuln = 0;
     if (mode === 'taxi') world = buildCityWorld();
-    else world = buildHouseWorld();
+    else if (mode === 'ant') world = buildHouseWorld();
+    else world = buildSkyWorld();
     player = createPlayer(mode);
     player.x = world.spawn.x; player.y = world.spawn.y;
     player.angle = world.spawn.angle;
+    if (mode === 'plane') player.speed = player.cruise;
     cam.x = player.x; cam.y = player.y;
     spawnPickup();
     running = true;
@@ -1242,7 +1536,10 @@
     const tier = money > 100 ? 'good' : money > 40 ? 'mid' : 'bad';
     const reason = (mode === 'ant' && lives <= 0) ? 'STOMPED FLAT' : 'SHIFT OVER';
     const earned = `${M.earnPrefix}${money}`;
-    const unit = mode === 'taxi' ? `fare${fares===1?'':'s'}` : `deliver${fares===1?'y':'ies'}`;
+    let unit = 'deliveries';
+    if (mode === 'taxi') unit = `fare${fares===1?'':'s'}`;
+    else if (mode === 'plane') unit = `flight${fares===1?'':'s'}`;
+    else unit = `deliver${fares===1?'y':'ies'}`;
     const overlay = document.getElementById('overlay');
     overlay.innerHTML = `
       <h1>${reason}</h1>
@@ -1258,38 +1555,57 @@
     document.getElementById('switchBtn').addEventListener('click', showModeSelect);
   }
 
+  function modeCardHTML(modeKey) {
+    const M = MODES[modeKey];
+    const swatches = COLOR_PALETTE[modeKey].map(c =>
+      `<button class="swatch ${c === customization[modeKey] ? 'selected' : ''}" data-color="${c}" style="background:${c}" type="button" aria-label="${c}"></button>`
+    ).join('');
+    return `
+      <div class="mode-card" data-mode="${modeKey}" style="--mc-color:${M.accent};">
+        <span class="emoji">${M.emoji}</span>
+        <h2>${M.title}</h2>
+        <p>${M.blurb}</p>
+        <div class="color-row">${swatches}</div>
+        <button class="drive-btn" type="button">Drive &rarr;</button>
+      </div>`;
+  }
+
   function showModeSelect() {
     running = false;
     mode = null;
     const overlay = document.getElementById('overlay');
     overlay.innerHTML = `
       <h1>DRIVE ANYTHING</h1>
-      <p>Pick something to drive. Grab cargo, deliver it, beat the clock.</p>
-      <div class="modes" id="modeList">
-        <button class="mode-card" data-mode="taxi" style="--mc-color:#ffd84a;">
-          <span class="emoji">&#128658;</span>
-          <h2>Taxi Driver</h2>
-          <p>Pick up passengers across a city grid and deliver them to their destinations. Faster drop-offs earn bigger tips.</p>
-        </button>
-        <button class="mode-card" data-mode="ant" style="--mc-color:#d28a5a;">
-          <span class="emoji">&#128028;</span>
-          <h2>Ant Forager</h2>
-          <p>Crawl around a giant house, haul crumbs and snacks back to your anthill, and dodge stomping human feet.</p>
-        </button>
+      <p>Pick something to drive. Customize the paint, then go.</p>
+      <div class="modes">
+        ${modeCardHTML('taxi')}
+        ${modeCardHTML('ant')}
+        ${modeCardHTML('plane')}
       </div>
     `;
     overlay.classList.remove('hidden');
-    attachModeButtons();
+    attachModeHandlers();
     updateStatus();
   }
 
-  function attachModeButtons() {
-    document.querySelectorAll('.mode-card').forEach(btn => {
-      btn.addEventListener('click', () => startGame(btn.dataset.mode));
+  function attachModeHandlers() {
+    document.querySelectorAll('.mode-card').forEach(card => {
+      const modeKey = card.dataset.mode;
+      card.querySelectorAll('.swatch').forEach(sw => {
+        sw.addEventListener('click', (e) => {
+          e.stopPropagation();
+          customization[modeKey] = sw.dataset.color;
+          saveCustomization();
+          card.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+          sw.classList.add('selected');
+        });
+      });
+      const driveBtn = card.querySelector('.drive-btn');
+      if (driveBtn) driveBtn.addEventListener('click', () => startGame(modeKey));
     });
   }
 
-  attachModeButtons();
+  showModeSelect();
   requestAnimationFrame(loop);
 })();
 </script>
