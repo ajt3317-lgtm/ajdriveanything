@@ -285,12 +285,39 @@
   let hazards = [], hazardTimer = 0, shake = 0, invuln = 0;
   const cam = { x: 0, y: 0 };
   const keys = {};
+  let adminMode = false;
+  let cheatCode = [];
+  const cheatSequence = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright'];
 
   window.addEventListener('keydown', e => {
     keys[e.key.toLowerCase()] = true;
     if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase())) e.preventDefault();
+
+    const key = e.key.toLowerCase();
+    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+      cheatCode.push(key);
+      if (cheatCode.length > cheatSequence.length) cheatCode.shift();
+      if (JSON.stringify(cheatCode) === JSON.stringify(cheatSequence)) {
+        adminMode = true;
+        cheatCode = [];
+        showMessage('Cheat Code Activated! Click to Teleport', '#0f0');
+      }
+    }
   });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  canvas.addEventListener('click', (e) => {
+    if (adminMode && running && player) {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      const worldX = cam.x + (clickX - W/2);
+      const worldY = cam.y + (clickY - H/2);
+      player.x = worldX;
+      player.y = worldY;
+      showMessage('Teleported!', '#0f0');
+    }
+  });
 
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
