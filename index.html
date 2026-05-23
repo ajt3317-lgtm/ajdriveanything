@@ -226,6 +226,23 @@
         bad: 'Choppy shift. The tower wants a word with you.'
       },
       pickupRadius: 70, stopSpeed: 2.4,
+    },
+    ship: {
+      title: 'Supply Ship',
+      emoji: '&#9973;',
+      blurb: 'Navigate the ocean delivering supplies to ports. Watch out for roaming mines and bombs in the water.',
+      accent: '#ff6b5a',
+      bgClear: '#4a7a9e',
+      earnLabel: 'Supplies', fareLabel: 'Deliveries', earnPrefix: '',
+      duration: 150, hasLives: true, lives: 3, hasHazards: true,
+      speedSuffix: ' kt', speedMul: 28,
+      statusInitial: { t: 'Port is awaiting cargo', d: 'Navigate to the cyan marker to pick up supplies.' },
+      gameOver: {
+        good: 'Mission accomplished! Command is satisfied.',
+        mid: 'Supplies delivered. Command is content.',
+        bad: 'You made it, but barely. Command is disappointed.'
+      },
+      pickupRadius: 60, stopSpeed: 1.8,
     }
   };
 
@@ -234,17 +251,19 @@
     taxi:  ['#ffd84a', '#ff5a5a', '#5aff5a', '#5a8aff', '#d05aff', '#ffffff', '#222222'],
     ant:   ['#3a1808', '#cc1810', '#0a48a0', '#0a6010', '#6a0a6a', '#ff8800', '#888888'],
     plane: ['#ffffff', '#ff5a5a', '#5fb8ff', '#ffd84a', '#5aff5a', '#d05aff', '#222222'],
+    ship:  ['#5a8aff', '#ff5a5a', '#5aff5a', '#ffd84a', '#ffffff', '#ff8844', '#444444'],
   };
 
   let customization = (() => {
     try {
       const saved = JSON.parse(localStorage.getItem('driveAnythingColors'));
-      if (saved && saved.taxi && saved.ant && saved.plane) return saved;
+      if (saved && saved.taxi && saved.ant && saved.plane && saved.ship) return saved;
     } catch (e) {}
     return {
       taxi: COLOR_PALETTE.taxi[0],
       ant: COLOR_PALETTE.ant[0],
       plane: COLOR_PALETTE.plane[0],
+      ship: COLOR_PALETTE.ship[0],
     };
   })();
   function saveCustomization() {
@@ -504,6 +523,53 @@
     };
   }
 
+  // ============ OCEAN WORLD ============
+  function buildOceanWorld() {
+    const WORLD_W = 3800, WORLD_H = 2800;
+    const ports = [
+      { x: 500,  y: 600,  name: 'Port Alpha' },
+      { x: 1800, y: 500,  name: 'Port Beta' },
+      { x: 3200, y: 700,  name: 'Port Gamma' },
+      { x: 800,  y: 1800, name: 'Port Delta' },
+      { x: 2600, y: 2000, name: 'Port Epsilon' },
+      { x: 3600, y: 1500, name: 'Port Zeta' },
+      { x: 1200, y: 2400, name: 'Port Theta' },
+    ];
+    const islands = [];
+    let rs = 54321;
+    function rng() { rs = (rs * 1664525 + 1013904223) >>> 0; return (rs % 10000) / 10000; }
+    for (let i = 0; i < 18; i++) {
+      islands.push({
+        x: rng() * WORLD_W,
+        y: rng() * WORLD_H,
+        r: 40 + rng() * 80,
+      });
+    }
+    const reefs = [];
+    for (let i = 0; i < 12; i++) {
+      reefs.push({
+        x: rng() * WORLD_W,
+        y: rng() * WORLD_H,
+        rocks: Array.from({ length: 5 + Math.floor(rng() * 5) }, () => ({
+          ox: (rng() - 0.5) * 120,
+          oy: (rng() - 0.5) * 120,
+          r: 12 + rng() * 20,
+        }))
+      });
+    }
+    return {
+      type: 'ocean',
+      width: WORLD_W, height: WORLD_H,
+      ports, islands, reefs,
+      spawn: { x: ports[0].x, y: ports[0].y + 100, angle: 0 },
+      isOffSurface() { return false; },
+      offSurfacePenalty: 1.0,
+      collides() { return false; },
+      randomPickup() { return ports[Math.floor(Math.random() * ports.length)]; },
+      randomDest()   { return ports[Math.floor(Math.random() * ports.length)]; },
+      fixedDest: null,
+    };
+
   // ============ PLAYER ============
   function createPlayer(kind) {
     if (kind === 'taxi') {
@@ -523,13 +589,21 @@
         turnAtRest: true,
         legPhase: 0,
       };
-    } else {
+    } else if (kind === 'plane') {
       return {
         kind: 'plane', x: 0, y: 0, angle: 0, speed: 4,
         w: 28, h: 46,
         minSpeed: 1.6, cruise: 4.5, maxSpeed: 8,
         maxReverse: 0,
         accel: 0.07, brake: 0, friction: 0.05, turn: 0.05,
+        turnAtRest: false,
+      };
+    } else {
+      return {
+        kind: 'ship', x: 0, y: 0, angle: 0, speed: 0,
+        w: 32, h: 48,
+        maxSpeed: 4.8, maxReverse: -2.2,
+        accel: 0.06, brake: 0.16, friction: 0.04, turn: 0.038,
         turnAtRest: false,
       };
     }
@@ -568,6 +642,13 @@
         name: passengerNames[Math.floor(Math.random()*passengerNames.length)],
         fare: baseFare, status: 'waiting', maxTime: 90, timer: 0, type: 'passenger',
       };
+    } else if (mode === 'ship') {
+      const baseFare = 5 + Math.round(dist(pickup, dest) / 120);
+      passenger = {
+        pickup, dest,
+        name: `Crate ${1+Math.floor(Math.random()*99)}`,
+        fare: baseFare, status: 'waiting', maxTime: 80, timer: 0, type: 'cargo',
+      };
     } else {
       const f = foodTypes[Math.floor(Math.random()*foodTypes.length)];
       passenger = {
@@ -602,6 +683,14 @@
       } else {
         t.textContent = `Flying ${passenger.name}`;
         d.textContent = `Destination: ${passenger.dest.name}. Throttle down to land on the runway.`;
+      }
+    } else if (mode === 'ship') {
+      if (passenger.status === 'waiting') {
+        t.textContent = `Load ${passenger.name}`;
+        d.textContent = `Navigate to ${passenger.pickup.name}. Avoid the mines and bombs! Worth ${passenger.fare} supply points.`;
+      } else {
+        t.textContent = `Delivering ${passenger.name}`;
+        d.textContent = `Head to ${passenger.dest.name}. Watch for hazards!`;
       }
     } else {
       if (passenger.status === 'waiting') {
@@ -645,32 +734,74 @@
     });
   }
 
+  function spawnBomb() {
+    let bx = 100 + Math.random() * (world.width - 200);
+    let by = 100 + Math.random() * (world.height - 200);
+    const vx = (Math.random() - 0.5) * 1.6;
+    const vy = (Math.random() - 0.5) * 1.6;
+    hazards.push({
+      x: bx, y: by, vx, vy,
+      age: 0, maxLife: 6 + Math.random() * 4,
+      radius: 18 + Math.random() * 8,
+      state: 'drift', type: 'bomb',
+    });
+  }
+
   function updateHazards(dt) {
     if (!MODES[mode].hasHazards) return;
-    hazardTimer -= dt;
-    if (hazardTimer <= 0) {
-      spawnFoot();
-      hazardTimer = 1.8 + Math.random() * 2.2;
-    }
-    for (let i = hazards.length - 1; i >= 0; i--) {
-      const f = hazards[i];
-      f.age += dt;
-      if (f.state === 'warn' && f.age >= f.warnDur) {
-        f.state = 'stomp'; f.age = 0; shake = 12;
-        if (invuln <= 0 && Math.hypot(player.x - f.x, player.y - f.y) < f.radius * 0.9) {
+
+    if (mode === 'ship') {
+      hazardTimer -= dt;
+      if (hazardTimer <= 0) {
+        spawnBomb();
+        hazardTimer = 2.0 + Math.random() * 2.8;
+      }
+      for (let i = hazards.length - 1; i >= 0; i--) {
+        const b = hazards[i];
+        b.age += dt;
+        if (b.age >= b.maxLife) { hazards.splice(i, 1); continue; }
+        b.x += b.vx;
+        b.y += b.vy;
+        b.x = clamp(b.x, b.radius + 20, world.width - b.radius - 20);
+        b.y = clamp(b.y, b.radius + 20, world.height - b.radius - 20);
+        if (invuln <= 0 && Math.hypot(player.x - b.x, player.y - b.y) < player.w/2 + b.radius) {
           lives -= 1; invuln = 1.6;
-          showMessage('STOMPED!', '#f55');
+          showMessage('BOOM! Hull damage!', '#f55');
           if (passenger && passenger.status === 'onboard') {
-            showMessage('Dropped the food!', '#f88');
+            showMessage('Lost the cargo!', '#f88');
             passenger.status = 'waiting';
             updateStatus();
           }
           if (lives <= 0) { endGame(); return; }
+          hazards.splice(i, 1);
         }
-      } else if (f.state === 'stomp' && f.age >= f.stompDur) {
-        f.state = 'lift'; f.age = 0;
-      } else if (f.state === 'lift' && f.age >= f.liftDur) {
-        hazards.splice(i, 1);
+      }
+    } else {
+      hazardTimer -= dt;
+      if (hazardTimer <= 0) {
+        spawnFoot();
+        hazardTimer = 1.8 + Math.random() * 2.2;
+      }
+      for (let i = hazards.length - 1; i >= 0; i--) {
+        const f = hazards[i];
+        f.age += dt;
+        if (f.state === 'warn' && f.age >= f.warnDur) {
+          f.state = 'stomp'; f.age = 0; shake = 12;
+          if (invuln <= 0 && Math.hypot(player.x - f.x, player.y - f.y) < f.radius * 0.9) {
+            lives -= 1; invuln = 1.6;
+            showMessage('STOMPED!', '#f55');
+            if (passenger && passenger.status === 'onboard') {
+              showMessage('Dropped the food!', '#f88');
+              passenger.status = 'waiting';
+              updateStatus();
+            }
+            if (lives <= 0) { endGame(); return; }
+          }
+        } else if (f.state === 'stomp' && f.age >= f.stompDur) {
+          f.state = 'lift'; f.age = 0;
+        } else if (f.state === 'lift' && f.age >= f.liftDur) {
+          hazards.splice(i, 1);
+        }
       }
     }
   }
@@ -779,11 +910,13 @@
           passenger.status = 'onboard';
           if (mode === 'taxi') showMessage(`${passenger.name} hopped in!`, '#4fd');
           else if (mode === 'plane') showMessage(`${passenger.name} boarded!`, '#4fd');
+          else if (mode === 'ship') showMessage(`${passenger.name} loaded!`, '#4fd');
           else showMessage(`Got the ${passenger.foodName}!`, '#4fd');
           updateStatus();
         } else if (passenger.timer > passenger.maxTime) {
           if (mode === 'taxi') showMessage(`${passenger.name} gave up...`, '#f88');
           else if (mode === 'plane') showMessage(`${passenger.name} missed the flight...`, '#f88');
+          else if (mode === 'ship') showMessage(`Cargo reassigned...`, '#f88');
           else showMessage(`Other ants got it first...`, '#f88');
           passenger = null;
         }
@@ -798,6 +931,10 @@
             const tip = Math.max(0, Math.round((passenger.maxTime - passenger.timer + 30) * 0.15));
             total = passenger.fare + tip;
             showMessage(`+$${total} ${tip>0 ? `(tip $${tip})` : ''}`, '#4fd');
+          } else if (mode === 'ship') {
+            const bonus = Math.max(0, Math.round((passenger.maxTime - passenger.timer) * 0.08));
+            total = passenger.fare + bonus;
+            showMessage(`+${total} supplies${bonus>0 ? ` (on time!)` : ''}`, '#4fd');
           } else {
             const bonus = Math.max(0, Math.round((passenger.maxTime - passenger.timer) * 0.05));
             total = passenger.fare + bonus;
@@ -834,10 +971,15 @@
 
     if (world.type === 'city') drawCityBg();
     else if (world.type === 'house') drawHouseBg();
-    else drawSkyBg();
+    else if (world.type === 'sky') drawSkyBg();
+    else if (world.type === 'ocean') drawOceanBg();
 
     if (world.type === 'sky') {
       for (const ap of world.airports) drawAirport(ap);
+    }
+
+    if (world.type === 'ocean') {
+      for (const port of world.ports) drawPort(port);
     }
 
     if (passenger) {
@@ -845,6 +987,7 @@
       if (passenger.status === 'waiting') {
         drawMarker(passenger.pickup.x, passenger.pickup.y, '#4fd', 1 + Math.sin(t) * 0.2);
         if (passenger.type === 'passenger') drawPerson(passenger.pickup.x, passenger.pickup.y);
+        else if (passenger.type === 'cargo') drawCargo(passenger.pickup.x, passenger.pickup.y);
         else passenger.foodDraw(passenger.pickup.x, passenger.pickup.y, 1);
       }
       if (mode !== 'ant' || passenger.status === 'onboard') {
@@ -856,14 +999,17 @@
 
     if (world.type === 'house') drawAnthill(world.anthill.x, world.anthill.y);
 
-    // Plane mode: clouds drawn between scenery and the plane (plane is "above" clouds)
     if (world.type === 'sky') drawClouds();
 
     if (player.kind === 'taxi') drawTaxiCar(player.x, player.y, player.angle);
     else if (player.kind === 'ant') drawAntChar(player.x, player.y, player.angle, player.legPhase, passenger && passenger.status === 'onboard' ? passenger : null);
-    else drawPlaneCharacter(player.x, player.y, player.angle);
+    else if (player.kind === 'plane') drawPlaneCharacter(player.x, player.y, player.angle);
+    else if (player.kind === 'ship') drawShipCharacter(player.x, player.y, player.angle);
 
-    for (const f of hazards) drawFoot(f);
+    for (const f of hazards) {
+      if (f.type === 'bomb') drawBomb(f);
+      else drawFoot(f);
+    }
 
     ctx.restore();
   }
@@ -1032,6 +1178,58 @@
         ctx.fillRect(b.x, b.y, b.size, 2);
       }
     }
+  }
+
+  function drawOceanBg() {
+    const w = world.width, h = world.height;
+    ctx.fillStyle = '#3a6fa0';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    for (let y = 0; y < h; y += 50) {
+      for (let x = 0; x < w; x += 70) {
+        const ox = (Math.floor(y/50) % 2) * 35;
+        ctx.beginPath();
+        ctx.ellipse(x + ox, y + 25, 16, 3, 0, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    for (const island of world.islands) {
+      ctx.fillStyle = 'rgba(60, 100, 60, 0.4)';
+      ctx.beginPath(); ctx.arc(island.x + 3, island.y + 3, island.r + 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#7ea862';
+      ctx.beginPath(); ctx.arc(island.x, island.y, island.r, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#a0c878';
+      ctx.beginPath(); ctx.arc(island.x - 4, island.y - 6, island.r * 0.6, 0, Math.PI*2); ctx.fill();
+    }
+    for (const reef of world.reefs) {
+      for (const rock of reef.rocks) {
+        ctx.fillStyle = 'rgba(80, 80, 100, 0.5)';
+        ctx.beginPath(); ctx.arc(reef.x + rock.ox + 1, reef.y + rock.oy + 1, rock.r, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#6a7a9a';
+        ctx.beginPath(); ctx.arc(reef.x + rock.ox, reef.y + rock.oy, rock.r, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  }
+
+  function drawPort(port) {
+    ctx.save();
+    ctx.translate(port.x, port.y);
+    ctx.fillStyle = '#c8c8a8';
+    ctx.fillRect(-50, -30, 100, 60);
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-50, -30, 100, 60);
+    ctx.fillStyle = '#8a8a6a';
+    ctx.fillRect(-45, -25, 20, 50);
+    ctx.fillRect(25, -25, 20, 50);
+    ctx.fillStyle = '#666';
+    ctx.fillRect(-8, -40, 16, 12);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(port.name.split(' ')[1], 0, 0);
+    ctx.restore();
   }
 
   function drawClouds() {
@@ -1401,6 +1599,42 @@
     ctx.restore();
   }
 
+  function drawShipCharacter(x, y, angle) {
+    const body = customization.ship;
+    const trim = darken(body, 0.45);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(-16, 6);
+    ctx.lineTo(16, 6);
+    ctx.lineTo(10, 24);
+    ctx.lineTo(-10, 24);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(-16, 0);
+    ctx.lineTo(16, 0);
+    ctx.lineTo(10, 20);
+    ctx.lineTo(-10, 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = trim;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = trim;
+    ctx.fillRect(-14, -4, 28, 4);
+    ctx.fillStyle = '#8aa';
+    ctx.fillRect(-8, -10, 16, 6);
+    ctx.fillStyle = '#aac';
+    ctx.fillRect(-4, -12, 8, 2);
+    ctx.fillStyle = '#f88';
+    ctx.beginPath(); ctx.arc(0, 8, 2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
   function drawFoot(f) {
     ctx.save();
     ctx.translate(f.x, f.y);
@@ -1427,6 +1661,23 @@
       ctx.fillStyle = `rgba(40, 40, 40, ${1 - p})`;
       drawFootShape(0, -p * 40, 1 - p * 0.2);
     }
+    ctx.restore();
+  }
+
+  function drawBomb(b) {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    const glow = Math.sin(performance.now() / 300) * 0.3 + 0.7;
+    ctx.fillStyle = `rgba(255, 100, 100, ${glow * 0.4})`;
+    ctx.beginPath(); ctx.arc(0, 0, b.radius + 8, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff4444';
+    ctx.beginPath(); ctx.arc(0, 0, b.radius, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff6666';
+    ctx.beginPath(); ctx.arc(-4, -4, b.radius * 0.6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-2, -b.radius - 4, 4, 4);
+    ctx.fillStyle = '#ff8800';
+    ctx.beginPath(); ctx.arc(0, -b.radius - 2, 1.5, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
 
@@ -1495,6 +1746,19 @@
     ctx.restore();
   }
 
+  function drawCargo(x, y, scale) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(scale || 1, scale || 1);
+    ctx.fillStyle = '#8a6a4a';
+    ctx.fillRect(-7, -7, 14, 14);
+    ctx.strokeStyle = '#5a4a2a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-7, -7, 14, 14);
+    ctx.strokeStyle = '#6a5a3a';
+    ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(7, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, 7); ctx.stroke();
+    ctx.restore();
+  }
+
   // ============ LIFECYCLE ============
   let lastTime = performance.now();
   function loop(now) {
@@ -1519,7 +1783,8 @@
     passenger = null; hazards = []; hazardTimer = 3.5; shake = 0; invuln = 0;
     if (mode === 'taxi') world = buildCityWorld();
     else if (mode === 'ant') world = buildHouseWorld();
-    else world = buildSkyWorld();
+    else if (mode === 'plane') world = buildSkyWorld();
+    else world = buildOceanWorld();
     player = createPlayer(mode);
     player.x = world.spawn.x; player.y = world.spawn.y;
     player.angle = world.spawn.angle;
@@ -1581,6 +1846,7 @@
         ${modeCardHTML('taxi')}
         ${modeCardHTML('ant')}
         ${modeCardHTML('plane')}
+        ${modeCardHTML('ship')}
       </div>
     `;
     overlay.classList.remove('hidden');
