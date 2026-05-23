@@ -299,9 +299,14 @@
       cheatCode.push(key);
       if (cheatCode.length > cheatSequence.length) cheatCode.shift();
       if (JSON.stringify(cheatCode) === JSON.stringify(cheatSequence)) {
-        adminMode = true;
         cheatCode = [];
-        showMessage('Cheat Code Activated! Click to Teleport, Scroll to Zoom', '#0f0');
+        const pwd = prompt('Enter admin password:');
+        if (pwd === 'ajtajtajt') {
+          adminMode = true;
+          showMessage('Admin Mode Activated! Click to Teleport, Scroll to Zoom', '#0f0');
+        } else if (pwd !== null) {
+          showMessage('Wrong Password', '#f00');
+        }
       }
     }
 
