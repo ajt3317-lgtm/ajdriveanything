@@ -55,10 +55,10 @@
     overflow-y: auto;
   }
   #overlay h1 {
-    font-size: 56px; margin: 0 0 6px;
+    font-size: 56px; margin: 0 0 16px;
     background: linear-gradient(120deg, #ffd84a, #f472b6, #5fb8ff);
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent; letter-spacing: -0.02em; font-weight: 800;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    letter-spacing: -0.02em; font-weight: 800;
   }
   #overlay p { margin: 4px 0; max-width: 540px; text-align: center; color: #ddd; font-size: 15px; }
   .modes {
@@ -66,8 +66,8 @@
     flex-wrap: wrap; justify-content: center;
   }
   .mode-card {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(20, 20, 30, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 16px; padding: 20px;
     width: 240px;
     transition: transform 0.15s, background 0.15s, border-color 0.15s;
@@ -526,14 +526,16 @@
   // ============ OCEAN WORLD ============
   function buildOceanWorld() {
     const WORLD_W = 3800, WORLD_H = 2800;
-    const ports = [
-      { x: 500,  y: 600,  name: 'Port Alpha' },
-      { x: 1800, y: 500,  name: 'Port Beta' },
-      { x: 3200, y: 700,  name: 'Port Gamma' },
-      { x: 800,  y: 1800, name: 'Port Delta' },
-      { x: 2600, y: 2000, name: 'Port Epsilon' },
-      { x: 3600, y: 1500, name: 'Port Zeta' },
-      { x: 1200, y: 2400, name: 'Port Theta' },
+    const supplyShips = [
+      { x: 500,  y: 600,  name: 'Supply 1' },
+      { x: 1800, y: 500,  name: 'Supply 2' },
+      { x: 3200, y: 700,  name: 'Supply 3' },
+      { x: 800,  y: 1800, name: 'Supply 4' },
+    ];
+    const warships = [
+      { x: 2000, y: 1200, vx: 0.8, vy: 0.3, name: 'Warship 1' },
+      { x: 1200, y: 2200, vx: -0.6, vy: 0.5, name: 'Warship 2' },
+      { x: 3400, y: 1800, vx: -0.4, vy: -0.7, name: 'Warship 3' },
     ];
     const islands = [];
     let rs = 54321;
@@ -560,15 +562,16 @@
     return {
       type: 'ocean',
       width: WORLD_W, height: WORLD_H,
-      ports, islands, reefs,
-      spawn: { x: ports[0].x, y: ports[0].y + 100, angle: 0 },
+      supplyShips, warships, islands, reefs,
+      spawn: { x: supplyShips[0].x, y: supplyShips[0].y + 100, angle: 0 },
       isOffSurface() { return false; },
       offSurfacePenalty: 1.0,
       collides() { return false; },
-      randomPickup() { return ports[Math.floor(Math.random() * ports.length)]; },
-      randomDest()   { return ports[Math.floor(Math.random() * ports.length)]; },
+      randomPickup() { return supplyShips[Math.floor(Math.random() * supplyShips.length)]; },
+      randomDest()   { return warships[Math.floor(Math.random() * warships.length)]; },
       fixedDest: null,
     };
+  }
 
   // ============ PLAYER ============
   function createPlayer(kind) {
@@ -686,11 +689,11 @@
       }
     } else if (mode === 'ship') {
       if (passenger.status === 'waiting') {
-        t.textContent = `Load ${passenger.name}`;
-        d.textContent = `Navigate to ${passenger.pickup.name}. Avoid the mines and bombs! Worth ${passenger.fare} supply points.`;
+        t.textContent = `Load supplies from ${passenger.pickup.name}`;
+        d.textContent = `Navigate to the cyan marker. Avoid bombs! Worth ${passenger.fare} points.`;
       } else {
-        t.textContent = `Delivering ${passenger.name}`;
-        d.textContent = `Head to ${passenger.dest.name}. Watch for hazards!`;
+        t.textContent = `Deliver to ${passenger.dest.name}`;
+        d.textContent = `Head to the red marker. The warship is moving - intercept it! Watch for bombs!`;
       }
     } else {
       if (passenger.status === 'waiting') {
@@ -898,6 +901,15 @@
 
     if (player.kind === 'ant') player.legPhase += Math.abs(player.speed) * dt * 12;
 
+    if (world.type === 'ocean') {
+      for (const warship of world.warships) {
+        warship.x += warship.vx;
+        warship.y += warship.vy;
+        if (warship.x < 100 || warship.x > world.width - 100) warship.vx *= -1;
+        if (warship.y < 100 || warship.y > world.height - 100) warship.vy *= -1;
+      }
+    }
+
     updateHazards(dt);
 
     if (!passenger) spawnPickup();
@@ -979,7 +991,8 @@
     }
 
     if (world.type === 'ocean') {
-      for (const port of world.ports) drawPort(port);
+      for (const ship of world.supplyShips) drawSupplyShip(ship);
+      for (const warship of world.warships) drawWarship(warship);
     }
 
     if (passenger) {
@@ -1211,24 +1224,44 @@
     }
   }
 
-  function drawPort(port) {
+  function drawSupplyShip(ship) {
     ctx.save();
-    ctx.translate(port.x, port.y);
-    ctx.fillStyle = '#c8c8a8';
-    ctx.fillRect(-50, -30, 100, 60);
-    ctx.strokeStyle = '#888';
+    ctx.translate(ship.x, ship.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-35, -8, 70, 16);
+    ctx.fillStyle = '#8a9aaa';
+    ctx.fillRect(-35, -8, 70, 16);
+    ctx.strokeStyle = '#5a6a7a';
     ctx.lineWidth = 2;
-    ctx.strokeRect(-50, -30, 100, 60);
-    ctx.fillStyle = '#8a8a6a';
-    ctx.fillRect(-45, -25, 20, 50);
-    ctx.fillRect(25, -25, 20, 50);
-    ctx.fillStyle = '#666';
-    ctx.fillRect(-8, -40, 16, 12);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(port.name.split(' ')[1], 0, 0);
+    ctx.strokeRect(-35, -8, 70, 16);
+    ctx.fillStyle = '#6a7a8a';
+    ctx.fillRect(-25, -5, 16, 10);
+    ctx.fillRect(10, -5, 16, 10);
+    ctx.fillStyle = '#999';
+    ctx.fillRect(-5, -12, 10, 6);
+    ctx.restore();
+  }
+
+  function drawWarship(ship) {
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-45, -10, 90, 20);
+    ctx.fillStyle = '#4a5a6a';
+    ctx.fillRect(-45, -10, 90, 20);
+    ctx.strokeStyle = '#2a3a4a';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(-45, -10, 90, 20);
+    ctx.fillStyle = '#6a7a8a';
+    ctx.fillRect(-35, -6, 20, 12);
+    ctx.fillRect(15, -6, 20, 12);
+    ctx.fillStyle = '#ddd';
+    ctx.fillRect(-8, -16, 16, 8);
+    ctx.fillRect(-8, 8, 16, 6);
+    ctx.fillStyle = '#ff6666';
+    ctx.beginPath();
+    ctx.arc(-25, -15, 4, 0, Math.PI*2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -1800,56 +1833,55 @@
     const M = MODES[mode];
     const tier = money > 100 ? 'good' : money > 40 ? 'mid' : 'bad';
     const reason = (mode === 'ant' && lives <= 0) ? 'STOMPED FLAT' : 'SHIFT OVER';
-    const earned = `${M.earnPrefix}${money}`;
+    const earned = M.earnPrefix + money;
     let unit = 'deliveries';
-    if (mode === 'taxi') unit = `fare${fares===1?'':'s'}`;
-    else if (mode === 'plane') unit = `flight${fares===1?'':'s'}`;
-    else unit = `deliver${fares===1?'y':'ies'}`;
+    if (mode === 'taxi') unit = fares === 1 ? 'fare' : 'fares';
+    else if (mode === 'plane') unit = fares === 1 ? 'flight' : 'flights';
+    else if (mode === 'ship') unit = fares === 1 ? 'supply delivery' : 'supply deliveries';
+    else unit = fares === 1 ? 'delivery' : 'deliveries';
     const overlay = document.getElementById('overlay');
-    overlay.innerHTML = `
-      <h1>${reason}</h1>
-      <p>You earned <span style="color:${M.accent};font-weight:700">${earned}</span> from ${fares} ${unit}.</p>
-      <p>${M.gameOver[tier]}</p>
-      <div class="end-buttons">
-        <button class="btn-primary" id="againBtn">Drive Again</button>
-        <button class="btn-secondary" id="switchBtn">Switch Vehicle</button>
-      </div>
-    `;
+    overlay.innerHTML = '<h1>' + reason + '</h1>' +
+      '<p>You earned <span style="color:' + M.accent + ';font-weight:700">' + earned + '</span> from ' + fares + ' ' + unit + '.</p>' +
+      '<p>' + M.gameOver[tier] + '</p>' +
+      '<div class="end-buttons">' +
+      '<button class="btn-primary" id="againBtn">Drive Again</button>' +
+      '<button class="btn-secondary" id="switchBtn">Switch Vehicle</button>' +
+      '</div>';
     overlay.classList.remove('hidden');
-    document.getElementById('againBtn').addEventListener('click', () => startGame(mode));
+    document.getElementById('againBtn').addEventListener('click', function() { startGame(mode); });
     document.getElementById('switchBtn').addEventListener('click', showModeSelect);
   }
 
   function modeCardHTML(modeKey) {
     const M = MODES[modeKey];
-    const swatches = COLOR_PALETTE[modeKey].map(c =>
-      `<button class="swatch ${c === customization[modeKey] ? 'selected' : ''}" data-color="${c}" style="background:${c}" type="button" aria-label="${c}"></button>`
-    ).join('');
-    return `
-      <div class="mode-card" data-mode="${modeKey}" style="--mc-color:${M.accent};">
-        <span class="emoji">${M.emoji}</span>
-        <h2>${M.title}</h2>
-        <p>${M.blurb}</p>
-        <div class="color-row">${swatches}</div>
-        <button class="drive-btn" type="button">Drive &rarr;</button>
-      </div>`;
+    let swatches = '';
+    for (const c of COLOR_PALETTE[modeKey]) {
+      const selected = c === customization[modeKey] ? 'selected' : '';
+      swatches += '<button class="swatch ' + selected + '" data-color="' + c + '" style="background:' + c + '" type="button" aria-label="' + c + '"></button>';
+    }
+    return '<div class="mode-card" data-mode="' + modeKey + '" style="--mc-color:' + M.accent + ';">' +
+      '<span class="emoji">' + M.emoji + '</span>' +
+      '<h2>' + M.title + '</h2>' +
+      '<p>' + M.blurb + '</p>' +
+      '<div class="color-row">' + swatches + '</div>' +
+      '<button class="drive-btn" type="button">Drive &rarr;</button>' +
+      '</div>';
   }
 
   function showModeSelect() {
     running = false;
     mode = null;
     const overlay = document.getElementById('overlay');
-    overlay.innerHTML = `
-      <h1>DRIVE ANYTHING</h1>
-      <p>Pick something to drive. Customize the paint, then go.</p>
-      <div class="modes">
-        ${modeCardHTML('taxi')}
-        ${modeCardHTML('ant')}
-        ${modeCardHTML('plane')}
-        ${modeCardHTML('ship')}
-      </div>
-    `;
+    overlay.innerHTML = '<h1>DRIVE ANYTHING</h1>' +
+      '<p>Pick something to drive. Customize the paint, then go.</p>' +
+      '<div class="modes">' +
+      modeCardHTML('taxi') +
+      modeCardHTML('ant') +
+      modeCardHTML('plane') +
+      modeCardHTML('ship') +
+      '</div>';
     overlay.classList.remove('hidden');
+    overlay.style.background = 'rgba(0,0,0,0.95)';
     attachModeHandlers();
     updateStatus();
   }
