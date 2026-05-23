@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Taxi Driver</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #1a1a1a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #fff;
+    overflow: hidden;
+  }
+  #game-wrap {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+  canvas {
+    display: block;
+    background: #2a3a2a;
+  }
+  #hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 12px 16px;
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 200px;
+  }
+  #hud .row {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px 0;
+    font-size: 14px;
+  }
+  #hud .label { color: #aaa; }
+  #hud .value { font-weight: 600; color: #ffd84a; }
+  #status {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 12px 16px;
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 260px;
+    font-size: 14px;
+  }
+  #status .title {
+    font-weight: 700;
+    color: #ffd84a;
+    margin-bottom: 6px;
+  }
+  #status .desc { color: #ccc; font-size: 13px; line-height: 1.4; }
+  #help {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #ccc;
+  }
+  #help kbd {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: monospace;
+    color: #fff;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 10;
+  }
+  #overlay h1 {
+    font-size: 48px;
+    margin: 0 0 10px;
+    color: #ffd84a;
+  }
+  #overlay p {
+    margin: 4px 0;
+    max-width: 480px;
+    text-align: center;
+    color: #ddd;
+  }
+  #overlay button {
+    margin-top: 20px;
+    padding: 12px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    background: #ffd84a;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  #overlay button:hover { background: #ffe57a; }
+  .hidden { display: none !important; }
+  #message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffd84a;
+    padding: 16px 32px;
+    border-radius: 10px;
+    font-size: 22px;
+    font-weight: 700;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #message.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div class="row"><span class="label">Earnings</span><span class="value" id="money">$0</span></div>
+    <div class="row"><span class="label">Fares</span><span class="value" id="fares">0</span></div>
+    <div class="row"><span class="label">Time</span><span class="value" id="time">2:00</span></div>
+    <div class="row"><span class="label">Speed</span><span class="value" id="speed">0 mph</span></div>
+  </div>
+
+  <div id="status">
+    <div class="title" id="statusTitle">Looking for a fare</div>
+    <div class="desc" id="statusDesc">Drive to the flashing passenger marker to pick someone up.</div>
+  </div>
+
+  <div id="help">
+    <kbd>W</kbd>/<kbd>↑</kbd> drive &nbsp;
+    <kbd>S</kbd>/<kbd>↓</kbd> reverse &nbsp;
+    <kbd>A</kbd><kbd>D</kbd>/<kbd>←</kbd><kbd>→</kbd> steer &nbsp;
+    <kbd>Space</kbd> brake
+  </div>
+
+  <div id="message"></div>
+
+  <div id="overlay">
+    <h1>TAXI DRIVER</h1>
+    <p>Pick up passengers and deliver them to their destinations before time runs out.</p>
+    <p>Pickup spots are <span style="color:#4fd"> cyan</span>, destinations are <span style="color:#f55">red</span>.</p>
+    <p>The closer to the destination, the bigger the tip. Don't crash too hard!</p>
+    <button id="startBtn">START SHIFT</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let W = window.innerWidth, H = window.innerHeight;
+  function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W; canvas.height = H;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // World grid
+  const TILE = 120;            // tile size
+  const COLS = 14;
+  const ROWS = 14;
+  const ROAD_W = 50;
+  const WORLD_W = COLS * TILE;
+  const WORLD_H = ROWS * TILE;
+
+  // Determine road network: every tile boundary is a road, blocks fill interior.
+  // Roads are horizontal at y = r*TILE (the band) and vertical at x = c*TILE.
+  function isOnRoad(x, y) {
+    const mx = ((x % TILE) + TILE) % TILE;
+    const my = ((y % TILE) + TILE) % TILE;
+    return mx < ROAD_W || mx > TILE - ROAD_W || my < ROAD_W || my > TILE - ROAD_W;
+  }
+
+  // Snap a random world point to a sidewalk (just outside the road)
+  function randomSidewalkPoint() {
+    // Pick a random block (col, row) and a random side
+    for (let tries = 0; tries < 200; tries++) {
+      const c = 1 + Math.floor(Math.random() * (COLS - 2));
+      const r = 1 + Math.floor(Math.random() * (ROWS - 2));
+      const side = Math.floor(Math.random() * 4);
+      const blockX = c * TILE + ROAD_W;
+      const blockY = r * TILE + ROAD_W;
+      const blockW = TILE - 2 * ROAD_W;
+      const blockH = TILE - 2 * ROAD_W;
+      let x, y;
+      const margin = 14;
+      if (side === 0) { // top
+        x = blockX + Math.random() * blockW;
+        y = blockY - margin;
+      } else if (side === 1) { // bottom
+        x = blockX + Math.random() * blockW;
+        y = blockY + blockH + margin;
+      } else if (side === 2) { // left
+        x = blockX - margin;
+        y = blockY + Math.random() * blockH;
+      } else { // right
+        x = blockX + blockW + margin;
+        y = blockY + Math.random() * blockH;
+      }
+      if (x > 50 && y > 50 && x < WORLD_W - 50 && y < WORLD_H - 50) return { x, y };
+    }
+    return { x: WORLD_W / 2, y: WORLD_H / 2 };
+  }
+
+  // Buildings pattern per block (deterministic)
+  function buildingsForBlock(c, r) {
+    const seed = (c * 928371 + r * 1827) % 1000;
+    const arr = [];
+    const px = c * TILE + ROAD_W;
+    const py = r * TILE + ROAD_W;
+    const pw = TILE - 2 * ROAD_W;
+    const ph = TILE - 2 * ROAD_W;
+    // simple subdivision into a few buildings
+    let count = 2 + (seed % 3);
+    let segs = [];
+    if (count === 2) {
+      segs = [{ x: 0, y: 0, w: pw / 2 - 2, h: ph }, { x: pw / 2 + 2, y: 0, w: pw / 2 - 2, h: ph }];
+    } else if (count === 3) {
+      segs = [
+        { x: 0, y: 0, w: pw, h: ph / 2 - 2 },
+        { x: 0, y: ph / 2 + 2, w: pw / 2 - 2, h: ph / 2 - 2 },
+        { x: pw / 2 + 2, y: ph / 2 + 2, w: pw / 2 - 2, h: ph / 2 - 2 }
+      ];
+    } else {
+      segs = [
+        { x: 0, y: 0, w: pw / 2 - 2, h: ph / 2 - 2 },
+        { x: pw / 2 + 2, y: 0, w: pw / 2 - 2, h: ph / 2 - 2 },
+        { x: 0, y: ph / 2 + 2, w: pw / 2 - 2, h: ph / 2 - 2 },
+        { x: pw / 2 + 2, y: ph / 2 + 2, w: pw / 2 - 2, h: ph / 2 - 2 }
+      ];
+    }
+    for (let i = 0; i < segs.length; i++) {
+      const s = segs[i];
+      const hue = ((seed * 7 + i * 53) % 360);
+      arr.push({
+        x: px + s.x, y: py + s.y, w: s.w, h: s.h,
+        color: `hsl(${hue}, 12%, ${28 + ((seed + i) % 18)}%)`,
+        roof: `hsl(${hue}, 20%, ${42 + ((seed * 3 + i) % 16)}%)`,
+        windows: Math.floor((s.w * s.h) / 800)
+      });
+    }
+    return arr;
+  }
+
+  // Pre-generate buildings
+  const buildings = [];
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      const bs = buildingsForBlock(c, r);
+      for (const b of bs) buildings.push(b);
+    }
+  }
+
+  // Trees / decorations near sidewalks
+  const decos = [];
+  for (let i = 0; i < 220; i++) {
+    const c = Math.floor(Math.random() * COLS);
+    const r = Math.floor(Math.random() * ROWS);
+    const px = c * TILE + ROAD_W;
+    const py = r * TILE + ROAD_W;
+    const corner = Math.floor(Math.random() * 4);
+    const off = 4;
+    let x, y;
+    if (corner === 0) { x = px - off; y = py - off; }
+    else if (corner === 1) { x = px + (TILE - 2 * ROAD_W) + off; y = py - off; }
+    else if (corner === 2) { x = px - off; y = py + (TILE - 2 * ROAD_W) + off; }
+    else { x = px + (TILE - 2 * ROAD_W) + off; y = py + (TILE - 2 * ROAD_W) + off; }
+    decos.push({ x, y, kind: Math.random() < 0.7 ? 'tree' : 'hydrant' });
+  }
+
+  // Player taxi
+  const taxi = {
+    x: TILE * 2 + ROAD_W / 2,
+    y: TILE * 2 + ROAD_W / 2,
+    angle: 0,
+    speed: 0,
+    maxSpeed: 5.4,
+    maxReverse: -2.6,
+    accel: 0.08,
+    brake: 0.18,
+    friction: 0.03,
+    turn: 0.045,
+    w: 22,
+    h: 38
+  };
+
+  // Camera
+  const cam = { x: taxi.x, y: taxi.y };
+
+  // Input
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase())) e.preventDefault();
+  });
+  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  // Game state
+  let money = 0;
+  let fares = 0;
+  let timeLeft = 120; // seconds
+  let running = false;
+  let passenger = null; // { pickup: {x,y}, dest: {x,y}, name, fare, status: 'waiting'|'onboard' }
+  const passengerNames = ['Alex', 'Maya', 'Chen', 'Priya', 'Diego', 'Rosa', 'Sam', 'Kai', 'Yuki', 'Omar', 'Lola', 'Theo', 'Nina', 'Ravi', 'Ella'];
+
+  function spawnPassenger() {
+    let pickup = randomSidewalkPoint();
+    let dest;
+    let tries = 0;
+    do {
+      dest = randomSidewalkPoint();
+      tries++;
+    } while (dist(pickup, dest) < TILE * 3 && tries < 20);
+    const baseFare = 8 + Math.round(dist(pickup, dest) / 50);
+    passenger = {
+      pickup, dest,
+      name: passengerNames[Math.floor(Math.random() * passengerNames.length)],
+      fare: baseFare,
+      status: 'waiting',
+      maxTime: 60,
+      timer: 0
+    };
+    updateStatus();
+  }
+
+  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+  function updateStatus() {
+    const t = document.getElementById('statusTitle');
+    const d = document.getElementById('statusDesc');
+    if (!passenger) {
+      t.textContent = 'Looking for a fare';
+      d.textContent = 'A new passenger will appear shortly.';
+      return;
+    }
+    if (passenger.status === 'waiting') {
+      t.textContent = `${passenger.name} needs a ride`;
+      d.textContent = `Head to the cyan marker. Fare: $${passenger.fare}. Don't keep them waiting!`;
+    } else {
+      t.textContent = `Driving ${passenger.name}`;
+      d.textContent = `Drop them off at the red marker. Faster drop-offs earn bigger tips.`;
+    }
+  }
+
+  function showMessage(text, color) {
+    const el = document.getElementById('message');
+    el.textContent = text;
+    el.style.color = color || '#ffd84a';
+    el.classList.add('show');
+    clearTimeout(showMessage._t);
+    showMessage._t = setTimeout(() => el.classList.remove('show'), 1400);
+  }
+
+  // Collisions with buildings
+  function collidesBuildings(x, y, w, h, angle) {
+    // Use car corners
+    const cs = Math.cos(angle), sn = Math.sin(angle);
+    const hw = w / 2, hh = h / 2;
+    const corners = [
+      { x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw, y: hh }, { x: -hw, y: hh }
+    ];
+    for (const c of corners) {
+      const cx = x + c.x * cs - c.y * sn;
+      const cy = y + c.x * sn + c.y * cs;
+      // Quick check: corner inside any building rect
+      for (const b of buildings) {
+        if (cx > b.x && cx < b.x + b.w && cy > b.y && cy < b.y + b.h) return true;
+      }
+      if (cx < 0 || cy < 0 || cx > WORLD_W || cy > WORLD_H) return true;
+    }
+    return false;
+  }
+
+  function update(dt) {
+    if (!running) return;
+
+    timeLeft -= dt;
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      endGame();
+      return;
+    }
+
+    // Steering & acceleration
+    const accelInput = (keys['w'] || keys['arrowup']) ? 1 : 0;
+    const reverseInput = (keys['s'] || keys['arrowdown']) ? 1 : 0;
+    const brakeInput = keys[' '] ? 1 : 0;
+    const leftInput = (keys['a'] || keys['arrowleft']) ? 1 : 0;
+    const rightInput = (keys['d'] || keys['arrowright']) ? 1 : 0;
+
+    if (accelInput) taxi.speed += taxi.accel;
+    else if (reverseInput) taxi.speed -= taxi.accel;
+    else {
+      if (taxi.speed > 0) taxi.speed = Math.max(0, taxi.speed - taxi.friction);
+      else if (taxi.speed < 0) taxi.speed = Math.min(0, taxi.speed + taxi.friction);
+    }
+    if (brakeInput) {
+      if (taxi.speed > 0) taxi.speed = Math.max(0, taxi.speed - taxi.brake);
+      else if (taxi.speed < 0) taxi.speed = Math.min(0, taxi.speed + taxi.brake);
+    }
+
+    taxi.speed = Math.max(taxi.maxReverse, Math.min(taxi.maxSpeed, taxi.speed));
+
+    // turning scales with speed
+    const turnRate = taxi.turn * (Math.abs(taxi.speed) / taxi.maxSpeed) * (taxi.speed >= 0 ? 1 : -1);
+    if (leftInput) taxi.angle -= turnRate * 1.4;
+    if (rightInput) taxi.angle += turnRate * 1.4;
+
+    // off-road friction
+    if (!isOnRoad(taxi.x, taxi.y)) {
+      taxi.speed *= 0.96;
+    }
+
+    // Move
+    const nx = taxi.x + Math.sin(taxi.angle) * taxi.speed;
+    const ny = taxi.y - Math.cos(taxi.angle) * taxi.speed;
+
+    if (collidesBuildings(nx, ny, taxi.w, taxi.h, taxi.angle)) {
+      // bounce / stop
+      if (Math.abs(taxi.speed) > 2.5) showMessage('CRASH!', '#f66');
+      taxi.speed *= -0.35;
+    } else {
+      taxi.x = nx;
+      taxi.y = ny;
+    }
+
+    // camera follow
+    cam.x += (taxi.x - cam.x) * 0.12;
+    cam.y += (taxi.y - cam.y) * 0.12;
+
+    // Passenger interactions
+    if (!passenger) spawnPassenger();
+    if (passenger) {
+      passenger.timer += dt;
+      if (passenger.status === 'waiting') {
+        if (dist(taxi, passenger.pickup) < 28 && Math.abs(taxi.speed) < 0.6) {
+          passenger.status = 'onboard';
+          showMessage(`${passenger.name} hopped in!`, '#4fd');
+          updateStatus();
+        } else if (passenger.timer > passenger.maxTime) {
+          showMessage(`${passenger.name} gave up...`, '#f88');
+          passenger = null;
+        }
+      } else {
+        if (dist(taxi, passenger.dest) < 30 && Math.abs(taxi.speed) < 0.6) {
+          const tip = Math.max(0, Math.round((passenger.maxTime - passenger.timer + 30) * 0.2));
+          const total = passenger.fare + tip;
+          money += total;
+          fares += 1;
+          showMessage(`+$${total} ${tip > 0 ? `(tip $${tip})` : ''}`, '#4fd');
+          passenger = null;
+          updateStatus();
+        }
+      }
+    }
+
+    // Update HUD
+    document.getElementById('money').textContent = `$${money}`;
+    document.getElementById('fares').textContent = fares;
+    const m = Math.floor(timeLeft / 60), s = Math.floor(timeLeft % 60);
+    document.getElementById('time').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    document.getElementById('speed').textContent = `${Math.round(Math.abs(taxi.speed) * 12)} mph`;
+  }
+
+  // Drawing helpers
+  function drawWorld() {
+    // background grass
+    ctx.fillStyle = '#2a4a2a';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.translate(W / 2 - cam.x, H / 2 - cam.y);
+
+    // Block interiors as parks/grass? skip — buildings cover them. Draw road tiles.
+    // Roads: draw all horizontal and vertical road strips
+    ctx.fillStyle = '#3a3a3a';
+    // horizontal roads (top and bottom edges of every tile = same set as tile rows)
+    for (let r = 0; r <= ROWS; r++) {
+      const y = r * TILE - ROAD_W;
+      ctx.fillRect(0, y, WORLD_W, ROAD_W * 2);
+    }
+    for (let c = 0; c <= COLS; c++) {
+      const x = c * TILE - ROAD_W;
+      ctx.fillRect(x, 0, ROAD_W * 2, WORLD_H);
+    }
+
+    // Sidewalks (lighter band at road edge)
+    ctx.fillStyle = '#7a7a7a';
+    const sw = 6;
+    for (let r = 0; r <= ROWS; r++) {
+      const y1 = r * TILE - ROAD_W - sw;
+      const y2 = r * TILE + ROAD_W;
+      ctx.fillRect(0, y1, WORLD_W, sw);
+      ctx.fillRect(0, y2, WORLD_W, sw);
+    }
+    for (let c = 0; c <= COLS; c++) {
+      const x1 = c * TILE - ROAD_W - sw;
+      const x2 = c * TILE + ROAD_W;
+      ctx.fillRect(x1, 0, sw, WORLD_H);
+      ctx.fillRect(x2, 0, sw, WORLD_H);
+    }
+
+    // Lane dashes (yellow center lines)
+    ctx.strokeStyle = '#ffd84a';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([14, 14]);
+    for (let r = 0; r <= ROWS; r++) {
+      const y = r * TILE;
+      ctx.beginPath();
+      ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y);
+      ctx.stroke();
+    }
+    for (let c = 0; c <= COLS; c++) {
+      const x = c * TILE;
+      ctx.beginPath();
+      ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Intersection white crossings (subtle)
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    for (let r = 0; r <= ROWS; r++) {
+      for (let c = 0; c <= COLS; c++) {
+        ctx.fillRect(c * TILE - ROAD_W, r * TILE - ROAD_W, ROAD_W * 2, ROAD_W * 2);
+      }
+    }
+
+    // Buildings - cull off screen
+    const viewL = cam.x - W / 2 - 50, viewR = cam.x + W / 2 + 50;
+    const viewT = cam.y - H / 2 - 50, viewB = cam.y + H / 2 + 50;
+    for (const b of buildings) {
+      if (b.x + b.w < viewL || b.x > viewR || b.y + b.h < viewT || b.y > viewB) continue;
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(b.x + 4, b.y + 6, b.w, b.h);
+      // body
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      // roof border
+      ctx.strokeStyle = b.roof;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
+      // windows
+      ctx.fillStyle = 'rgba(255, 220, 130, 0.5)';
+      const winSize = 4;
+      const stepX = 12, stepY = 14;
+      for (let yy = b.y + 8; yy < b.y + b.h - 6; yy += stepY) {
+        for (let xx = b.x + 6; xx < b.x + b.w - 6; xx += stepX) {
+          if (((xx * 13 + yy * 7) % 5) > 1) {
+            ctx.fillRect(xx, yy, winSize, winSize);
+          }
+        }
+      }
+    }
+
+    // Decorations
+    for (const d of decos) {
+      if (d.x < viewL || d.x > viewR || d.y < viewT || d.y > viewB) continue;
+      if (d.kind === 'tree') {
+        ctx.fillStyle = '#1f3a1f';
+        ctx.beginPath();
+        ctx.arc(d.x + 1, d.y + 2, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#3aa83a';
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#cc3030';
+        ctx.fillRect(d.x - 2, d.y - 3, 4, 6);
+      }
+    }
+
+    // Passenger markers
+    if (passenger) {
+      const t = performance.now() / 300;
+      // pickup
+      if (passenger.status === 'waiting') {
+        drawMarker(passenger.pickup.x, passenger.pickup.y, '#4fd', 1 + Math.sin(t) * 0.2);
+        // little person
+        drawPerson(passenger.pickup.x, passenger.pickup.y);
+      }
+      // destination always shown
+      drawMarker(passenger.dest.x, passenger.dest.y, '#f55', 1 + Math.cos(t) * 0.2);
+
+      // Direction arrow at edge of screen
+      drawOffscreenArrow(passenger.status === 'waiting' ? passenger.pickup : passenger.dest,
+                         passenger.status === 'waiting' ? '#4fd' : '#f55');
+    }
+
+    // Taxi
+    drawTaxi(taxi.x, taxi.y, taxi.angle);
+
+    ctx.restore();
+  }
+
+  function drawMarker(x, y, color, pulse) {
+    ctx.save();
+    ctx.translate(x, y);
+    // ground glow
+    ctx.fillStyle = color + '33';
+    ctx.beginPath();
+    ctx.arc(0, 0, 22 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    // pin
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, -14, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-6, -10);
+    ctx.lineTo(6, -10);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(0, -14, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPerson(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    // body
+    ctx.fillStyle = '#3a6cd6';
+    ctx.fillRect(-3, -4, 6, 8);
+    // head
+    ctx.fillStyle = '#f0c08a';
+    ctx.beginPath();
+    ctx.arc(0, -7, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawOffscreenArrow(target, color) {
+    const sx = target.x - cam.x;
+    const sy = target.y - cam.y;
+    const halfW = W / 2 - 60;
+    const halfH = H / 2 - 60;
+    if (Math.abs(sx) < halfW && Math.abs(sy) < halfH) return;
+    const ang = Math.atan2(sy, sx);
+    // clamp to edge
+    const ax = Math.cos(ang) * Math.min(halfW, halfH) * 0.9;
+    const ay = Math.sin(ang) * Math.min(halfW, halfH) * 0.9;
+    ctx.save();
+    ctx.translate(cam.x + ax, cam.y + ay);
+    ctx.rotate(ang);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(14, 0);
+    ctx.lineTo(-6, -8);
+    ctx.lineTo(-6, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTaxi(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(-taxi.w / 2 + 2, -taxi.h / 2 + 3, taxi.w, taxi.h);
+    // body
+    ctx.fillStyle = '#ffd84a';
+    ctx.fillRect(-taxi.w / 2, -taxi.h / 2, taxi.w, taxi.h);
+    // checker stripe
+    ctx.fillStyle = '#222';
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(-taxi.w / 2 + i * 6, -2, 3, 4);
+      ctx.fillRect(-taxi.w / 2 + i * 6 + 3, 2, 3, 4);
+    }
+    // windshield
+    ctx.fillStyle = '#aee';
+    ctx.fillRect(-taxi.w / 2 + 3, -taxi.h / 2 + 4, taxi.w - 6, 8);
+    // rear window
+    ctx.fillStyle = '#9cd';
+    ctx.fillRect(-taxi.w / 2 + 3, taxi.h / 2 - 11, taxi.w - 6, 7);
+    // headlights
+    ctx.fillStyle = '#fff8a8';
+    ctx.fillRect(-taxi.w / 2 + 2, -taxi.h / 2 - 1, 5, 2);
+    ctx.fillRect(taxi.w / 2 - 7, -taxi.h / 2 - 1, 5, 2);
+    // taillights
+    ctx.fillStyle = '#d22';
+    ctx.fillRect(-taxi.w / 2 + 2, taxi.h / 2 - 1, 5, 2);
+    ctx.fillRect(taxi.w / 2 - 7, taxi.h / 2 - 1, 5, 2);
+    // TAXI sign
+    ctx.fillStyle = '#000';
+    ctx.fillRect(-6, -4, 12, 5);
+    ctx.fillStyle = '#ffd84a';
+    ctx.font = 'bold 6px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TAXI', 0, -1);
+    ctx.restore();
+  }
+
+  let lastTime = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    update(dt);
+    drawWorld();
+    requestAnimationFrame(loop);
+  }
+
+  function startGame() {
+    money = 0; fares = 0; timeLeft = 120;
+    taxi.x = TILE * 2 + ROAD_W / 2;
+    taxi.y = TILE * 2 + ROAD_W / 2;
+    taxi.angle = 0;
+    taxi.speed = 0;
+    cam.x = taxi.x; cam.y = taxi.y;
+    passenger = null;
+    spawnPassenger();
+    running = true;
+    document.getElementById('overlay').classList.add('hidden');
+  }
+
+  function endGame() {
+    running = false;
+    const overlay = document.getElementById('overlay');
+    overlay.innerHTML = `
+      <h1>SHIFT OVER</h1>
+      <p>You earned <span style="color:#ffd84a;font-weight:700">$${money}</span> from ${fares} fare${fares === 1 ? '' : 's'}.</p>
+      <p>${money > 100 ? 'Stellar shift! The dispatcher will be pleased.' : money > 40 ? 'Not bad. Some passengers still need a ride home.' : 'Rough day on the streets. Try again?'}</p>
+      <button id="startBtn">DRIVE AGAIN</button>
+    `;
+    overlay.classList.remove('hidden');
+    document.getElementById('startBtn').addEventListener('click', startGame);
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
