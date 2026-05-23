@@ -611,13 +611,41 @@
 
     if (world.isOffSurface(player.x, player.y)) player.speed *= world.offSurfacePenalty;
 
-    const nx = player.x + Math.sin(player.angle) * player.speed;
-    const ny = player.y - Math.cos(player.angle) * player.speed;
-    if (world.collides(nx, ny, player.w, player.h, player.angle)) {
-      if (Math.abs(player.speed) > 2.5 && mode === 'taxi') showMessage('CRASH!', '#f66');
-      player.speed *= -0.35;
+    const dx = Math.sin(player.angle) * player.speed;
+    const dy = -Math.cos(player.angle) * player.speed;
+    let hit = false;
+    if (!world.collides(player.x + dx, player.y + dy, player.w, player.h, player.angle)) {
+      player.x += dx; player.y += dy;
+    } else if (Math.abs(dx) > 0.01 && !world.collides(player.x + dx, player.y, player.w, player.h, player.angle)) {
+      player.x += dx; hit = true;
+    } else if (Math.abs(dy) > 0.01 && !world.collides(player.x, player.y + dy, player.w, player.h, player.angle)) {
+      player.y += dy; hit = true;
     } else {
-      player.x = nx; player.y = ny;
+      hit = true;
+    }
+    if (hit) {
+      if (Math.abs(player.speed) > 2.5 && mode === 'taxi') showMessage('CRASH!', '#f66');
+      if (mode === 'taxi') player.speed *= -0.35;
+      else player.speed = 0;
+    }
+
+    // Depenetration: if rotation pushed a corner into an obstacle, nudge out
+    if (world.collides(player.x, player.y, player.w, player.h, player.angle)) {
+      for (let attempts = 0; attempts < 20; attempts++) {
+        const pd = 1 + attempts * 0.5;
+        let escaped = false;
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2;
+          const px = player.x + Math.cos(a) * pd;
+          const py = player.y + Math.sin(a) * pd;
+          if (!world.collides(px, py, player.w, player.h, player.angle)) {
+            player.x = px; player.y = py;
+            escaped = true;
+            break;
+          }
+        }
+        if (escaped) break;
+      }
     }
 
     cam.x += (player.x - cam.x) * 0.12;
