@@ -286,6 +286,7 @@
   const cam = { x: 0, y: 0 };
   const keys = {};
   let adminMode = false;
+  let zoom = 1;
   let cheatCode = [];
   const cheatSequence = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright'];
 
@@ -300,11 +301,32 @@
       if (JSON.stringify(cheatCode) === JSON.stringify(cheatSequence)) {
         adminMode = true;
         cheatCode = [];
-        showMessage('Cheat Code Activated! Click to Teleport', '#0f0');
+        showMessage('Cheat Code Activated! Click to Teleport, Scroll to Zoom', '#0f0');
+      }
+    }
+
+    if (adminMode) {
+      if (key === '+' || key === '=') {
+        zoom = Math.min(zoom + 0.2, 4);
+        showMessage('Zoom: ' + zoom.toFixed(1) + 'x', '#0f0');
+      } else if (key === '-') {
+        zoom = Math.max(zoom - 0.2, 0.5);
+        showMessage('Zoom: ' + zoom.toFixed(1) + 'x', '#0f0');
       }
     }
   });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  window.addEventListener('wheel', (e) => {
+    if (adminMode) {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        zoom = Math.min(zoom + 0.1, 4);
+      } else {
+        zoom = Math.max(zoom - 0.1, 0.5);
+      }
+    }
+  }, { passive: false });
 
   canvas.addEventListener('click', (e) => {
     if (adminMode && running && player) {
@@ -1006,7 +1028,8 @@
     ctx.save();
     const sx = (Math.random() - 0.5) * shake;
     const sy = (Math.random() - 0.5) * shake;
-    ctx.translate(W / 2 - cam.x + sx, H / 2 - cam.y + sy);
+    ctx.translate(W / 2 - cam.x * zoom + sx, H / 2 - cam.y * zoom + sy);
+    ctx.scale(zoom, zoom);
 
     if (world.type === 'city') drawCityBg();
     else if (world.type === 'house') drawHouseBg();
