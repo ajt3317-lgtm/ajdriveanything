@@ -243,6 +243,23 @@
         bad: 'You made it, but barely. Command is disappointed.'
       },
       pickupRadius: 60, stopSpeed: 1.8,
+    },
+    train: {
+      title: 'Train Conductor',
+      emoji: '&#128646;',
+      blurb: 'Drive a train on the tracks, transporting passengers and cargo. Watch for cars at crossings!',
+      accent: '#ff8833',
+      bgClear: '#2a5a3a',
+      earnLabel: 'Revenue', fareLabel: 'Deliveries', earnPrefix: '$',
+      duration: 160, hasLives: true, lives: 3, hasHazards: true,
+      speedSuffix: ' mph', speedMul: 20,
+      statusInitial: { t: 'Station awaiting cargo', d: 'Move to the cyan marker to pick up passengers or cargo.' },
+      gameOver: {
+        good: 'Excellent service! Passengers are satisfied.',
+        mid: 'Decent route. Keep the schedule on time.',
+        bad: 'Some delays today. Try again?'
+      },
+      pickupRadius: 50, stopSpeed: 0.8,
     }
   };
 
@@ -252,18 +269,20 @@
     ant:   ['#3a1808', '#cc1810', '#0a48a0', '#0a6010', '#6a0a6a', '#ff8800', '#888888'],
     plane: ['#ffffff', '#ff5a5a', '#5fb8ff', '#ffd84a', '#5aff5a', '#d05aff', '#222222'],
     ship:  ['#5a8aff', '#ff5a5a', '#5aff5a', '#ffd84a', '#ffffff', '#ff8844', '#444444'],
+    train: ['#ff8833', '#ff0000', '#0066ff', '#00aa00', '#ffaa00', '#aa00ff', '#333333'],
   };
 
   let customization = (() => {
     try {
       const saved = JSON.parse(localStorage.getItem('driveAnythingColors'));
-      if (saved && saved.taxi && saved.ant && saved.plane && saved.ship) return saved;
+      if (saved && saved.taxi && saved.ant && saved.plane && saved.ship && saved.train) return saved;
     } catch (e) {}
     return {
       taxi: COLOR_PALETTE.taxi[0],
       ant: COLOR_PALETTE.ant[0],
       plane: COLOR_PALETTE.plane[0],
       ship: COLOR_PALETTE.ship[0],
+      train: COLOR_PALETTE.train[0],
     };
   })();
   function saveCustomization() {
@@ -318,6 +337,12 @@
         zoom = Math.max(zoom - 0.2, 0.5);
         showMessage('Zoom: ' + zoom.toFixed(1) + 'x', '#0f0');
       }
+    }
+
+    if (mode === 'train' && running && world && key === 'e') {
+      world.leverState = world.leverState === 1 ? 2 : 1;
+      const trackName = world.leverState === 1 ? 'Track A' : 'Track B';
+      showMessage('Switched to ' + trackName, '#4fd');
     }
   });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -627,6 +652,50 @@
     };
   }
 
+  // ============ TRAIN WORLD ============
+  function buildTrainWorld() {
+    const WORLD_W = 5000, WORLD_H = 1200;
+    const stations = [
+      { x: 200, y: 600, name: 'Station A' },
+      { x: 900, y: 600, name: 'Station B' },
+      { x: 1800, y: 600, name: 'Station C', track: 0 },
+      { x: 2800, y: 480, name: 'Station D', track: 1 },
+      { x: 2800, y: 720, name: 'Station E', track: 2 },
+      { x: 4700, y: 600, name: 'Station F' },
+    ];
+    const crossings = [
+      { x: 600, y: 600, angle: 0 },
+      { x: 1400, y: 600, angle: 0 },
+      { x: 2200, y: 600, angle: 0 },
+      { x: 3200, y: 480, angle: 0, track: 1 },
+      { x: 3200, y: 720, angle: 0, track: 2 },
+    ];
+    return {
+      type: 'train',
+      width: WORLD_W, height: WORLD_H,
+      stations, crossings,
+      spawn: { x: 100, y: 600, angle: Math.PI / 2 },
+      junctionX: 2400,
+      leverState: 1,
+      isOffSurface(x, y) {
+        if (x < this.junctionX - 200) return Math.abs(y - 600) > 80;
+        if (x < this.junctionX + 400) {
+          if (this.leverState === 1) return Math.abs(y - 480) > 80;
+          return Math.abs(y - 720) > 80;
+        }
+        if (this.leverState === 1) return Math.abs(y - 480) > 80;
+        return Math.abs(y - 720) > 80;
+      },
+      offSurfacePenalty: 0.7,
+      collides(x, y, w, h, angle) {
+        return x < 0 || x > WORLD_W || y < 200 || y > 1000;
+      },
+      randomPickup() { return stations[Math.floor(Math.random() * stations.length)]; },
+      randomDest()   { return stations[Math.floor(Math.random() * stations.length)]; },
+      fixedDest: null,
+    };
+  }
+
   // ============ PLAYER ============
   function createPlayer(kind) {
     if (kind === 'taxi') {
@@ -655,12 +724,20 @@
         accel: 0.07, brake: 0, friction: 0.05, turn: 0.05,
         turnAtRest: false,
       };
-    } else {
+    } else if (kind === 'ship') {
       return {
         kind: 'ship', x: 0, y: 0, angle: 0, speed: 0,
         w: 32, h: 48,
         maxSpeed: 4.8, maxReverse: -2.2,
         accel: 0.06, brake: 0.16, friction: 0.04, turn: 0.038,
+        turnAtRest: false,
+      };
+    } else {
+      return {
+        kind: 'train', x: 0, y: 0, angle: 0, speed: 0,
+        w: 60, h: 24,
+        maxSpeed: 7.2, maxReverse: -3.6,
+        accel: 0.16, brake: 0.22, friction: 0, turn: 0.03,
         turnAtRest: false,
       };
     }
@@ -706,6 +783,15 @@
         name: `Crate ${1+Math.floor(Math.random()*99)}`,
         fare: baseFare, status: 'waiting', maxTime: 80, timer: 0, type: 'cargo',
       };
+    } else if (mode === 'train') {
+      const cargoTypes = ['Passengers', 'Freight', 'Cars'];
+      const cargoType = cargoTypes[Math.floor(Math.random()*cargoTypes.length)];
+      const baseFare = 12 + Math.round(dist(pickup, dest) / 100);
+      passenger = {
+        pickup, dest,
+        name: cargoType,
+        fare: baseFare, status: 'waiting', maxTime: 100, timer: 0, type: 'cargo',
+      };
     } else {
       const f = foodTypes[Math.floor(Math.random()*foodTypes.length)];
       passenger = {
@@ -748,6 +834,14 @@
       } else {
         t.textContent = `Deliver to ${passenger.dest.name}`;
         d.textContent = `Head to the red marker. The warship is moving - intercept it! Watch for bombs!`;
+      }
+    } else if (mode === 'train') {
+      if (passenger.status === 'waiting') {
+        t.textContent = `Load ${passenger.name}`;
+        d.textContent = `Head to ${passenger.pickup.name} to load cargo. Worth $${passenger.fare}. Watch for cars at crossings!`;
+      } else {
+        t.textContent = `Deliver to ${passenger.dest.name}`;
+        d.textContent = `Drive to the red marker. Stay on the tracks! Watch for crossing cars!`;
       }
     } else {
       if (passenger.status === 'waiting') {
@@ -804,6 +898,18 @@
     });
   }
 
+  function spawnCrossingCar() {
+    const crossing = world.crossings[Math.floor(Math.random() * world.crossings.length)];
+    const vx = (Math.random() < 0.5 ? 1 : -1) * (2 + Math.random() * 1.5);
+    const vy = (Math.random() < 0.5 ? 1 : -1) * (0.5 + Math.random() * 0.8);
+    hazards.push({
+      x: crossing.x, y: crossing.y, vx, vy,
+      age: 0, maxLife: 6 + Math.random() * 3,
+      w: 30, h: 20,
+      type: 'crossing_car',
+    });
+  }
+
   function updateHazards(dt) {
     if (!MODES[mode].hasHazards) return;
 
@@ -824,6 +930,32 @@
         if (invuln <= 0 && Math.hypot(player.x - b.x, player.y - b.y) < player.w/2 + b.radius) {
           lives -= 1; invuln = 1.6;
           showMessage('BOOM! Hull damage!', '#f55');
+          if (passenger && passenger.status === 'onboard') {
+            showMessage('Lost the cargo!', '#f88');
+            passenger.status = 'waiting';
+            updateStatus();
+          }
+          if (lives <= 0) { endGame(); return; }
+          hazards.splice(i, 1);
+        }
+      }
+    } else if (mode === 'train') {
+      hazardTimer -= dt;
+      if (hazardTimer <= 0) {
+        spawnCrossingCar();
+        hazardTimer = 2.2 + Math.random() * 2.6;
+      }
+      for (let i = hazards.length - 1; i >= 0; i--) {
+        const c = hazards[i];
+        c.age += dt;
+        if (c.age >= c.maxLife) { hazards.splice(i, 1); continue; }
+        c.x += c.vx;
+        c.y += c.vy;
+        c.x = clamp(c.x, 50, world.width - 50);
+        c.y = clamp(c.y, 50, world.height - 50);
+        if (invuln <= 0 && Math.hypot(player.x - c.x, player.y - c.y) < (player.w + c.w) / 2) {
+          lives -= 1; invuln = 1.6;
+          showMessage('COLLISION! Cars crossed!', '#f55');
           if (passenger && passenger.status === 'onboard') {
             showMessage('Lost the cargo!', '#f88');
             passenger.status = 'waiting';
@@ -912,17 +1044,42 @@
       if (rightI) player.angle += rate * 1.4;
     }
 
-    if (world.isOffSurface(player.x, player.y)) player.speed *= world.offSurfacePenalty;
+    if (world.isOffSurface(player.x, player.y) && mode !== 'train') player.speed *= world.offSurfacePenalty;
 
     const dx = Math.sin(player.angle) * player.speed;
     const dy = -Math.cos(player.angle) * player.speed;
     let hit = false;
-    if (!world.collides(player.x + dx, player.y + dy, player.w, player.h, player.angle)) {
-      player.x += dx; player.y += dy;
-    } else if (Math.abs(dx) > 0.01 && !world.collides(player.x + dx, player.y, player.w, player.h, player.angle)) {
-      player.x += dx; hit = true;
-    } else if (Math.abs(dy) > 0.01 && !world.collides(player.x, player.y + dy, player.w, player.h, player.angle)) {
-      player.y += dy; hit = true;
+    let newX = player.x + dx;
+    let newY = player.y + dy;
+
+    if (mode === 'train') {
+      let targetY = 600;
+      const jx = world.junctionX;
+      const splitStart = jx - 200;
+      const splitEnd = jx + 300;
+      const mergeStart = 3800;
+      const mergeEnd = 4400;
+
+      if (newX >= splitStart && newX < splitEnd) {
+        const split = world.leverState === 1 ? 480 : 720;
+        const progress = (newX - splitStart) / (splitEnd - splitStart);
+        targetY = 600 + (split - 600) * progress;
+      } else if (newX >= splitEnd && newX < mergeStart) {
+        targetY = world.leverState === 1 ? 480 : 720;
+      } else if (newX >= mergeStart && newX < mergeEnd) {
+        const split = world.leverState === 1 ? 480 : 720;
+        const progress = (newX - mergeStart) / (mergeEnd - mergeStart);
+        targetY = split + (600 - split) * progress;
+      }
+      newY = targetY;
+    }
+
+    if (!world.collides(newX, newY, player.w, player.h, player.angle)) {
+      player.x = newX; player.y = newY;
+    } else if (Math.abs(dx) > 0.01 && !world.collides(newX, player.y, player.w, player.h, player.angle)) {
+      player.x = newX; hit = true;
+    } else if (Math.abs(dy) > 0.01 && !world.collides(player.x, newY, player.w, player.h, player.angle)) {
+      player.y = newY; hit = true;
     } else {
       hit = true;
     }
@@ -930,6 +1087,7 @@
       if (Math.abs(player.speed) > 2.5 && mode === 'taxi') showMessage('CRASH!', '#f66');
       if (mode === 'taxi') player.speed *= -0.35;
       else if (mode === 'ant') player.speed = 0;
+      else if (mode === 'train') player.speed = 0;
       // plane never hits
     }
 
@@ -977,6 +1135,7 @@
           if (mode === 'taxi') showMessage(`${passenger.name} hopped in!`, '#4fd');
           else if (mode === 'plane') showMessage(`${passenger.name} boarded!`, '#4fd');
           else if (mode === 'ship') showMessage(`${passenger.name} loaded!`, '#4fd');
+          else if (mode === 'train') showMessage(`Got the supplies: ${passenger.name}!`, '#4fd');
           else showMessage(`Got the ${passenger.foodName}!`, '#4fd');
           updateStatus();
         } else if (passenger.timer > passenger.maxTime) {
@@ -1040,6 +1199,7 @@
     else if (world.type === 'house') drawHouseBg();
     else if (world.type === 'sky') drawSkyBg();
     else if (world.type === 'ocean') drawOceanBg();
+    else if (world.type === 'train') drawTrainBg();
 
     if (world.type === 'sky') {
       for (const ap of world.airports) drawAirport(ap);
@@ -1048,6 +1208,10 @@
     if (world.type === 'ocean') {
       for (const ship of world.supplyShips) drawSupplyShip(ship);
       for (const warship of world.warships) drawWarship(warship);
+    }
+
+    if (world.type === 'train') {
+      for (const station of world.stations) drawStation(station);
     }
 
     if (passenger) {
@@ -1073,9 +1237,11 @@
     else if (player.kind === 'ant') drawAntChar(player.x, player.y, player.angle, player.legPhase, passenger && passenger.status === 'onboard' ? passenger : null);
     else if (player.kind === 'plane') drawPlaneCharacter(player.x, player.y, player.angle);
     else if (player.kind === 'ship') drawShipCharacter(player.x, player.y, player.angle);
+    else if (player.kind === 'train') drawTrain(player.x, player.y, player.angle);
 
     for (const f of hazards) {
       if (f.type === 'bomb') drawBomb(f);
+      else if (f.type === 'crossing_car') drawCrossingCar(f);
       else drawFoot(f);
     }
 
@@ -1277,6 +1443,178 @@
         ctx.beginPath(); ctx.arc(reef.x + rock.ox, reef.y + rock.oy, rock.r, 0, Math.PI*2); ctx.fill();
       }
     }
+  }
+
+  function drawTrainBg() {
+    const w = world.width, h = world.height;
+    ctx.fillStyle = '#4a6a3a';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#5a7a4a';
+    for (let i = 0; i < h; i += 60) {
+      ctx.fillRect(0, i, w, 30);
+    }
+
+    const jx = world.junctionX;
+    const splitStart = jx - 200;
+    const splitEnd = jx + 300;
+    const mergeStart = 3800;
+    const mergeEnd = 4400;
+
+    // Draw main track before junction
+    ctx.strokeStyle = '#8a9a7a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 600);
+    ctx.lineTo(splitStart, 600);
+    ctx.stroke();
+
+    // Draw smooth split tracks - upper (Station D)
+    ctx.beginPath();
+    ctx.moveTo(splitStart, 600);
+    for (let x = splitStart; x <= splitEnd; x += 2) {
+      const progress = (x - splitStart) / (splitEnd - splitStart);
+      const y = 600 + (480 - 600) * progress;
+      if (x === splitStart) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw smooth split tracks - lower (Station E)
+    ctx.beginPath();
+    ctx.moveTo(splitStart, 600);
+    for (let x = splitStart; x <= splitEnd; x += 2) {
+      const progress = (x - splitStart) / (splitEnd - splitStart);
+      const y = 600 + (720 - 600) * progress;
+      if (x === splitStart) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw main track during split
+    ctx.beginPath();
+    ctx.moveTo(splitEnd, 480);
+    ctx.lineTo(mergeStart, 480);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(splitEnd, 720);
+    ctx.lineTo(mergeStart, 720);
+    ctx.stroke();
+
+    // Draw smooth converging tracks - upper
+    ctx.beginPath();
+    ctx.moveTo(mergeStart, 480);
+    for (let x = mergeStart; x <= mergeEnd; x += 2) {
+      const progress = (x - mergeStart) / (mergeEnd - mergeStart);
+      const y = 480 + (600 - 480) * progress;
+      if (x === mergeStart) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw smooth converging tracks - lower
+    ctx.beginPath();
+    ctx.moveTo(mergeStart, 720);
+    for (let x = mergeStart; x <= mergeEnd; x += 2) {
+      const progress = (x - mergeStart) / (mergeEnd - mergeStart);
+      const y = 720 + (600 - 720) * progress;
+      if (x === mergeStart) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw main track after merge
+    ctx.beginPath();
+    ctx.moveTo(mergeEnd, 600);
+    ctx.lineTo(w, 600);
+    ctx.stroke();
+
+    // Draw tie marks
+    ctx.strokeStyle = '#6a7a6a';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < jx; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 590);
+      ctx.lineTo(x, 610);
+      ctx.stroke();
+    }
+    for (let x = jx + 300; x < mergeStart; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 470);
+      ctx.lineTo(x, 490);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, 710);
+      ctx.lineTo(x, 730);
+      ctx.stroke();
+    }
+    for (let x = mergeEnd; x < w; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 590);
+      ctx.lineTo(x, 610);
+      ctx.stroke();
+    }
+
+    // Draw lever/switch control at junction
+    ctx.fillStyle = '#444';
+    ctx.fillRect(jx - 40, 550, 80, 100);
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(jx - 40, 550, 80, 100);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('LEVER', jx, 555);
+
+    // Draw lever indicator
+    ctx.save();
+    ctx.translate(jx, 590);
+    ctx.fillStyle = world.leverState === 1 ? '#4f4' : '#f44';
+    ctx.beginPath();
+    ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(world.leverState === 1 ? 'A' : 'B', 0, 0);
+    ctx.restore();
+
+    // Draw roads at crossings
+    for (const crossing of world.crossings) {
+      ctx.fillStyle = '#6a5a4a';
+      ctx.fillRect(crossing.x - 100, crossing.y - 30, 200, 60);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.moveTo(crossing.x - 100, crossing.y);
+      ctx.lineTo(crossing.x + 100, crossing.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function drawStation(station) {
+    ctx.save();
+    ctx.translate(station.x, station.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-40, -35, 80, 70);
+    ctx.fillStyle = '#daa520';
+    ctx.fillRect(-40, -35, 80, 70);
+    ctx.strokeStyle = '#8a7510';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-40, -35, 80, 70);
+    ctx.fillStyle = '#8aa8cc';
+    ctx.fillRect(-30, -20, 20, 30);
+    ctx.fillRect(10, -20, 20, 30);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(station.name, 0, 15);
+    ctx.restore();
   }
 
   function drawSupplyShip(ship) {
@@ -1723,6 +2061,32 @@
     ctx.restore();
   }
 
+  function drawTrain(x, y, angle) {
+    const body = customization.train;
+    const trim = darken(body, 0.45);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-25, 3, 50, 12);
+    ctx.fillStyle = body;
+    ctx.fillRect(-25, 0, 50, 12);
+    ctx.strokeStyle = trim;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-25, 0, 50, 12);
+    ctx.fillStyle = trim;
+    ctx.fillRect(-22, -5, 8, 5);
+    ctx.fillStyle = '#8aa';
+    ctx.fillRect(-10, -6, 6, 6);
+    ctx.fillRect(4, -6, 6, 6);
+    ctx.fillStyle = '#aac';
+    ctx.fillRect(-16, -8, 5, 2);
+    ctx.fillStyle = '#f88';
+    ctx.beginPath(); ctx.arc(-20, 2, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(20, 2, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
   function drawFoot(f) {
     ctx.save();
     ctx.translate(f.x, f.y);
@@ -1766,6 +2130,24 @@
     ctx.fillRect(-2, -b.radius - 4, 4, 4);
     ctx.fillStyle = '#ff8800';
     ctx.beginPath(); ctx.arc(0, -b.radius - 2, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCrossingCar(c) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-c.w/2 + 1, -c.h/2 + 1, c.w, c.h);
+    ctx.fillStyle = '#dd4455';
+    ctx.fillRect(-c.w/2, -c.h/2, c.w, c.h);
+    ctx.strokeStyle = '#aa2233';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-c.w/2, -c.h/2, c.w, c.h);
+    ctx.fillStyle = '#88aacc';
+    ctx.fillRect(-c.w/2 + 4, -c.h/2 + 2, 8, c.h - 4);
+    ctx.fillRect(c.w/2 - 12, -c.h/2 + 2, 8, c.h - 4);
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(-2, -c.h/2 - 1, 4, 2);
     ctx.restore();
   }
 
@@ -1866,13 +2248,20 @@
     document.getElementById('earnLabel').textContent = M.earnLabel;
     document.getElementById('fareLabel').textContent = M.fareLabel;
     document.getElementById('livesRow').style.display = M.hasLives ? 'flex' : 'none';
+    const helpEl = document.getElementById('help');
+    if (mode === 'train') {
+      helpEl.innerHTML = '<kbd>W</kbd>/<kbd>&uarr;</kbd> forward &nbsp; <kbd>S</kbd>/<kbd>&darr;</kbd> reverse &nbsp; <kbd>A</kbd><kbd>D</kbd>/<kbd>&larr;</kbd><kbd>&rarr;</kbd> steer &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>E</kbd> switch track';
+    } else {
+      helpEl.innerHTML = '<kbd>W</kbd>/<kbd>&uarr;</kbd> forward &nbsp; <kbd>S</kbd>/<kbd>&darr;</kbd> reverse &nbsp; <kbd>A</kbd><kbd>D</kbd>/<kbd>&larr;</kbd><kbd>&rarr;</kbd> steer &nbsp; <kbd>Space</kbd> brake';
+    }
     money = 0; fares = 0; lives = M.lives;
     timeLeft = M.duration;
     passenger = null; hazards = []; hazardTimer = 3.5; shake = 0; invuln = 0;
     if (mode === 'taxi') world = buildCityWorld();
     else if (mode === 'ant') world = buildHouseWorld();
     else if (mode === 'plane') world = buildSkyWorld();
-    else world = buildOceanWorld();
+    else if (mode === 'ship') world = buildOceanWorld();
+    else world = buildTrainWorld();
     player = createPlayer(mode);
     player.x = world.spawn.x; player.y = world.spawn.y;
     player.angle = world.spawn.angle;
@@ -1934,6 +2323,7 @@
       modeCardHTML('ant') +
       modeCardHTML('plane') +
       modeCardHTML('ship') +
+      modeCardHTML('train') +
       '</div>';
     overlay.classList.remove('hidden');
     overlay.style.background = 'rgba(0,0,0,0.95)';
