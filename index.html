@@ -2061,29 +2061,70 @@
     ctx.restore();
   }
 
+  const TRAIN_SKINS = {
+    thomas: { name: 'Thomas', body: '#4a9fd8', accent: '#ff3333', number: '1', eyes: true },
+    percy: { name: 'Percy', body: '#2d8f2d', accent: '#ffdd00', number: '6', eyes: true },
+    gordon: { name: 'Gordon', body: '#1a5c9e', accent: '#ff4444', number: '4', eyes: true },
+    henry: { name: 'Henry', body: '#2d8f2d', accent: '#ffaa00', number: '3', eyes: true },
+    james: { name: 'James', body: '#d41a1a', accent: '#fff000', number: '5', eyes: true },
+    edward: { name: 'Edward', body: '#3a5a8a', accent: '#ffcc00', number: '2', eyes: true },
+    toby: { name: 'Toby', body: '#8b6f47', accent: '#ffdd00', number: '7', eyes: true },
+    emily: { name: 'Emily', body: '#2eb8cc', accent: '#ffaa00', number: '12', eyes: true }
+  };
+
+  let trainSkin = null;
+
   function drawTrain(x, y, angle) {
-    const body = customization.train;
-    const trim = darken(body, 0.45);
+    if (!trainSkin) trainSkin = TRAIN_SKINS.thomas;
+    const skin = trainSkin;
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
+
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillRect(-25, 3, 50, 12);
-    ctx.fillStyle = body;
+
+    ctx.fillStyle = skin.body;
     ctx.fillRect(-25, 0, 50, 12);
-    ctx.strokeStyle = trim;
+    ctx.strokeStyle = darken(skin.body, 0.5);
     ctx.lineWidth = 2;
     ctx.strokeRect(-25, 0, 50, 12);
-    ctx.fillStyle = trim;
+
+    // Cabin
+    ctx.fillStyle = darken(skin.body, 0.3);
     ctx.fillRect(-22, -5, 8, 5);
+
+    // Windows
     ctx.fillStyle = '#8aa';
     ctx.fillRect(-10, -6, 6, 6);
     ctx.fillRect(4, -6, 6, 6);
-    ctx.fillStyle = '#aac';
-    ctx.fillRect(-16, -8, 5, 2);
-    ctx.fillStyle = '#f88';
+
+    // Eyes
+    if (skin.eyes) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-14, -5, 3, 3);
+      ctx.fillRect(8, -5, 3, 3);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(-13.5, -4.5, 1.5, 1.5);
+      ctx.fillRect(8.5, -4.5, 1.5, 1.5);
+    }
+
+    // Accent stripe
+    ctx.fillStyle = skin.accent;
+    ctx.fillRect(-24, -2, 48, 2);
+
+    // Number
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 6px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(skin.number, -3, 1);
+
+    // Wheels
+    ctx.fillStyle = '#d22';
     ctx.beginPath(); ctx.arc(-20, 2, 1.5, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(20, 2, 1.5, 0, Math.PI*2); ctx.fill();
+
     ctx.restore();
   }
 
@@ -2261,7 +2302,10 @@
     else if (mode === 'ant') world = buildHouseWorld();
     else if (mode === 'plane') world = buildSkyWorld();
     else if (mode === 'ship') world = buildOceanWorld();
-    else world = buildTrainWorld();
+    else {
+      world = buildTrainWorld();
+      if (trainSkin) showMessage(`Now driving: ${trainSkin.name} the Train!`, trainSkin.body);
+    }
     player = createPlayer(mode);
     player.x = world.spawn.x; player.y = world.spawn.y;
     player.angle = world.spawn.angle;
@@ -2331,6 +2375,42 @@
     updateStatus();
   }
 
+  function showTrainSelector() {
+    const overlay = document.getElementById('overlay');
+    const skinKeys = Object.keys(TRAIN_SKINS);
+    let skins = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; max-width: 600px;">';
+    for (const key of skinKeys) {
+      const skin = TRAIN_SKINS[key];
+      skins += `<div style="background: rgba(20,20,30,0.8); border: 2px solid #555; border-radius: 8px; padding: 12px; cursor: pointer; text-align: center; transition: all 0.15s;" class="train-skin-btn" data-skin="${key}">
+        <div style="width: 100%; height: 30px; background: ${skin.body}; border: 1px solid ${darken(skin.body, 0.5)}; border-radius: 4px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center;">
+          <span style="color: #fff; font-weight: bold; font-size: 14px;">${skin.number}</span>
+        </div>
+        <div style="color: #fff; font-weight: 600; font-size: 13px;">${skin.name}</div>
+      </div>`;
+    }
+    skins += '</div>';
+    overlay.innerHTML = '<h1>CHOOSE YOUR TRAIN</h1>' +
+      '<p>Pick your favorite train character</p>' + skins;
+    overlay.classList.remove('hidden');
+    overlay.style.background = 'rgba(0,0,0,0.95)';
+    document.querySelectorAll('.train-skin-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        trainSkin = TRAIN_SKINS[btn.dataset.skin];
+        startGame('train');
+      });
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'rgba(255,255,255,0.1)';
+        btn.style.borderColor = TRAIN_SKINS[btn.dataset.skin].body;
+        btn.style.transform = 'scale(1.05)';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'rgba(20,20,30,0.8)';
+        btn.style.borderColor = '#555';
+        btn.style.transform = 'scale(1)';
+      });
+    });
+  }
+
   function attachModeHandlers() {
     document.querySelectorAll('.mode-card').forEach(card => {
       const modeKey = card.dataset.mode;
@@ -2344,7 +2424,10 @@
         });
       });
       const driveBtn = card.querySelector('.drive-btn');
-      if (driveBtn) driveBtn.addEventListener('click', () => startGame(modeKey));
+      if (driveBtn) driveBtn.addEventListener('click', () => {
+        if (modeKey === 'train') showTrainSelector();
+        else startGame(modeKey);
+      });
     });
   }
 
